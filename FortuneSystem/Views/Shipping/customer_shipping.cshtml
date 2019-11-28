@@ -1,0 +1,590 @@
+﻿@{
+    ViewBag.Title = "CUSTOMER";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+</div>
+<link href="~/Content/base_m.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+<link href="~/Content/base_m.css" rel="stylesheet" />
+
+<script>
+     $(document).on("input", ".numeric", function () {
+        this.value = this.value.replace(/\D/g, '');
+    });
+    $(document).on("input", ".validacion", function () {
+        var c = this.selectionStart,
+            r = /[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ .()&!@@/#%-]/,
+            v = $(this).val();
+        if (r.test(v)) {
+            $(this).val(v.replace(r, ''));
+            c--;
+        }
+        this.setSelectionRange(c, c);
+    });
+    $(document).on("click", "a", function () { $("#loading").css('display', 'none'); });
+
+    $(document).on("input", ".po", function () { $('.po').autocomplete({ source: '@Url.Action("Autocomplete_po")' }); });
+
+    $(document).ready(function () {
+        $('.js-example-basic-single').select2();
+        llenar_tabla_pedidos_customer_shipping();
+
+    });
+/***********************************************************************************************************************************************************************/
+    function llenar_tabla_pedidos_customer_shipping() {
+        var busqueda = '';
+        $("#load_csp").css('display', 'inline');
+        if ($("#caja_busqueda_pedido_customer_shipping").val() != '') {
+            busqueda = $("#caja_busqueda_pedido_customer_shipping").val();
+            } else {
+                busqueda = 0;
+            }
+            $.ajax({
+                url: '/Almacen/buscar_ordenes_customer_recibos',
+                contentType: 'application/json',
+                data: "{'busqueda':'" + busqueda + "'}",
+                dataType: 'json',
+                type: 'post',
+                success: function (result) {
+                    var html = '';
+                    $.each(result, function (key, item) {
+                        html += '<tr>';
+                        html += '<td style="width:5%;" >' + item.id_pedido + '</td>';
+                        html += '<td style="width:10%;" >' + item.pedido + '</td>';
+                        html += '<td style="width:15%;" >' + item.vpo + '</td>';
+                        html += '<td style="width:20%;" >' + item.customer + '</td>';
+                        html += '<td style="width:20%;" >' + item.customer_final + '</td>';
+                        html += '<td style="width:10%;" >' + item.date_cancel + '</td>';
+                        html += '<td style="width:10%;" >' + item.date_order + '</td>';
+                        html += '<td style="width:10%;" >' + item.total + '</td>';
+                        html += '</tr>';
+                    });
+                    $(".body_tabla_po_customer_shipping").html(html);
+                    $("#load_csp").css('display', 'none');
+                }
+            });
+    }
+    function llamar_llenar_tabla_pedidos_customer_shipping(event) {
+        if (event.keyCode == 13) {
+            llenar_tabla_pedidos_customer_shipping();
+        }
+    }
+    var po, customer, customer_final, date_order, units, date_cancel;
+    $(document).on("dblclick", "#tabla_po_customer_shipping tr", function () {
+        var row = this.rowIndex;
+        var id = $('#tabla_po_customer_shipping tr:eq(' + row + ') td:eq(0)').html();
+        $(".po_csp").html("<b>Order:</b> " + $('#tabla_po_customer_shipping tr:eq(' + row + ') td:eq(1)').html());
+        $(".customer_csp").html("<b>Customer: </b> " + $('#tabla_po_customer_shipping tr:eq(' + row + ') td:eq(3)').html());
+        $(".customer_final_csp").html("<b>Customer order:</b> " + $('#tabla_po_customer_shipping tr:eq(' + row + ') td:eq(4)').html());
+        $(".date_order_csp").html("<b>Date order: </b> " + $('#tabla_po_customer_shipping tr:eq(' + row + ') td:eq(6)').html());
+        $(".date_cancel_csp").html("<b>Date cancel:</b> " + $('#tabla_po_customer_shipping tr:eq(' + row + ') td:eq(5)').html());
+        $(".units_csp").html("<b>Total units: </b> " + $('#tabla_po_customer_shipping tr:eq(' + row + ') td:eq(7)').html());
+        buscar_estilos_orden_customer_shipping(id);
+    });
+    function buscar_estilos_orden_customer_shipping(id) {
+        $("#load_csp").css('display', 'inline');
+        $.ajax({
+            url: '/Almacen/buscar_estilos_customer_recibos',
+            contentType: 'application/json',
+            data: "{'pedido':'" + id + "'}",
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                var html = '';
+                $.each(result, function (key, item) {
+                    html += '<tr>';
+                    html += '<td style="width:10%;">' + item.id_summary + '</td>';
+                    html += '<td style="width:15%;">' + item.estilo + '</td>';
+                    html += '<td style="width:35%;">' + item.descripcion + '</td>';
+                    html += '<td style="width:10%;">' + item.total + '</td>';
+                    html += '<td style="width:15%;">' + item.genero + '</td>';
+                    html += '<td style="width:20%;">' + item.color + '</td>';
+                    html += '</tr>';
+                });
+                $("#div_tabla_estilos_shipping").css('visibility', 'visible');
+                $(".body_tabla_estilos_customer_shipping").html(html);
+                $("#load_csp").css('display', 'none');
+            }
+        });
+    }
+    $(document).on("dblclick", "#tabla_estilos_customer_shipping tr", function () {
+        var row = this.rowIndex;
+        var id = $('#tabla_estilos_customer_shipping tr:eq(' + row + ') td:eq(0)').html();
+        $(".estilo_csp").html("<b>Style:</b> " + $('#tabla_estilos_customer_shipping tr:eq(' + row + ') td:eq(1)').html() + " " + $('#tabla_estilos_customer_shipping tr:eq(' + row + ') td:eq(2)').html());
+        $(".total_estilo_csp").html("<b>Total units:</b> " + $('#tabla_estilos_customer_shipping tr:eq(' + row + ') td:eq(3)').html());
+        $(".color_csp").html("<b>Color: </b> " + $('#tabla_estilos_customer_shipping tr:eq(' + row + ') td:eq(5)').html());
+        buscar_tallas_orden_customer_shipping(id);
+    });
+    var tallas, tallas_primera_calidad, tallas_finales, tallas_extras, tallas_dmg, primera_calidad;
+    function buscar_tallas_orden_customer_shipping(id) {
+        $("#load_csp").css('display', 'inline');
+        $.ajax({
+            url: '/Shipping/buscar_informacion_shipping',
+            contentType: 'application/json',
+            data: "{'estilo':'" + id + "'}",
+            dataType: 'json',
+            type: 'post',
+            success: function (jsonData) {
+                tallas = jsonData.Data.tallas;
+                var tallas_finales = [], cantidades_originales = [], cantidades_finales = [], cantidades_extras = [], cantidades_dmg = [], finales_extras = [], finales_dmg = [], cantidades_samples = [];
+                var totales = [],suma_orden = 0;
+                $.each(tallas, function (key, r) {
+                    tallas_finales.push(r.id_talla);
+                    cantidades_originales.push(r.total);
+                    suma_orden += r.total;
+                    totales.push(r.total);
+                    cantidades_extras.push(r.extras);
+                    cantidades_samples.push(r.ejemplos);
+                    cantidades_finales.push(0);
+                    finales_extras.push(0);
+                    //finales_dmg.push(0);
+                });
+                totales.push(suma_orden);
+                primera_calidad = jsonData.Data.tallas_primera_calidad;
+                tallas_extras = jsonData.Data.tallas_extras;
+                //tallas_dmg = jsonData.Data.tallas_dmg;
+                tallas_samples = jsonData.Data.tallas_samples;
+                var html = '';
+                var encabezado = '<tr><th>DATE</th><td>PACKING</td><th>SHIP TO</th>';
+                $.each(tallas, function (key, r) {
+                    encabezado += '<th>'+r.talla+'</th>';
+                }); encabezado += '<th>TOTAL</th></tr>';
+                var i = 0;
+                $(".cabecera_tabla_tallas_customer_shipping").html(encabezado);
+                $.each(primera_calidad, function (key, item) {
+                    html += '<tr>';
+                    html += '<td>' + item.fecha + '</td>';
+                    html += '<td>' + item.packing + '</td>';
+                    if (item.destino.nombre == null) {
+                        html += '<td></td>';
+                    } else {
+                        html += '<td>' + item.destino.nombre + '</td>';
+                    }
+                    var total_fila = 0;
+                    var i2 = 0;
+                    for (var i = 0; i < tallas_finales.length; i++){
+                        var existe = 0, existencia = 0;
+                        $.each(item.lista_tallas, function (key, t) {
+                            if (t.id_talla == tallas_finales[i]) {
+                                existe++;
+                                cantidades_finales[i] += t.total;
+                                 html += '<td>' + t.total + '</td>';
+                                existencia = t.total;
+                                totales[i] = totales[i] - t.total;
+                                total_fila+=t.total;
+                            }
+                        });
+                        if (existe == 0) {html += '<td>0</td>'; }
+                        i2++;
+                    }
+                    totales[i2] = totales[i2] - total_fila;
+                    html += '<td>' + total_fila+ '</td>';
+                    html += '</tr>';
+                });
+                html += '<tr><td></td><td></td><td><b>+/-</b></td>';
+                var i = 0;
+                $.each(tallas, function (key, t) {
+                    for (i = 0; i< cantidades_finales.length; i++) {
+                        if (t.id_talla == tallas_finales[i]) {
+                            var final = cantidades_originales[i] - cantidades_finales[i];
+                            if (final == 0) {
+                                html += '<td style="color:black;">0</td>';
+                            } else {
+                                if (final >= 1) {
+                                    html += '<td style="color:#f60000;">-' + final + '</td>';
+                                } else {
+                                    html += '<td style="color:#126dca;">+' + Math.abs(final) + '</td>';
+                                }
+                            }
+                        }
+                    }
+                });
+                if (totales[i]==0) {
+                    html += '<td style="color:black;">' + totales[i] + '</td>';
+                } else {
+                    if (totales[i]>0) {
+                        html += '<td style="color:#f60000;">-' + totales[i] + '</td>';
+                    } else {
+                        html += '<td style="color:#126dca;">+' + Math.abs(totales[i]) + '</td>';
+                    }
+                }
+                html += '</tr>';
+                //*******EXTRAS***********************************************************************************
+               html += '<tr><td></td><td></td><td><b>EXTRAS</b></td>';
+                var contador = 0,suma_total=0,suma_enviado=0;
+                $.each(tallas, function (key, item) {
+                    var suma = 0;
+                    $.each(tallas_extras, function (key, i) {
+                        $.each(i.lista_tallas, function (key, j) {
+                            if (item.id_talla == j.id_talla) {
+                                suma +=j.total;
+                            }
+                        });
+                    });
+                    suma_total += cantidades_extras[contador];
+                    suma_enviado += suma;
+
+                    if ((cantidades_extras[contador]-suma)==0) {
+                        html += '<td style="color:black;">'  + suma + "/" + cantidades_extras[contador] + '</td>';
+                    } else {
+                        if (totales[i]>0) {
+                            html += '<td style="color:#f60000;">' + suma + "/" + cantidades_extras[contador] + '</td>';
+                        } else {
+                            html += '<td style="color:#126dca;">'  + suma + "/" + cantidades_extras[contador] + '</td>';
+                        }
+                    }
+
+                    //html += '<td>' + suma + "/" + cantidades_extras[contador] + '</td>';
+                    contador++;
+                });
+                if ((suma_total-suma_enviado)==0) {
+                        html += '<td style="color:black;">'   + suma_enviado + "/" + suma_total +'</td>';
+                    } else {
+                        if (totales[i]>0) {
+                            html += '<td style="color:#f60000;">'  + suma_enviado + "/" + suma_total + '</td>';
+                        } else {
+                            html += '<td style="color:#126dca;">'   + suma_enviado + "/" + suma_total + '</td>';
+                        }
+                    }
+                //html += '<td>' + suma_enviado + "/" + suma_total + '</td>';
+                html += '</tr>';
+            //******************************************************************************************
+            //*******SAMPLES***********************************************************************************
+                html += '<tr><td></td><td></td><td><b>SAMPLES</b></td>';
+                suma_total = 0;suma_enviado=0;
+                var contador = 0;
+                $.each(tallas, function (key, item) {
+                    var suma = 0;
+                    $.each(tallas_samples, function (key, i) {
+                        $.each(i.lista_tallas, function (key, j) {
+                            if (item.id_talla == j.id_talla) {
+                                suma +=j.total;
+                            }
+                        });
+                    });
+                    suma_total += cantidades_samples[contador];
+                    suma_enviado += suma;
+                     if ((cantidades_samples[contador]-suma)==0) {
+                        html += '<td style="color:black;">'  + suma + "/" + cantidades_samples[contador] + '</td>';
+                     } else {
+                        if (totales[i]>0) {
+                            html += '<td style="color:#f60000;">' + suma + "/" + cantidades_samples[contador] + '</td>';
+                        } else {
+                            html += '<td style="color:#126dca;">'  + suma + "/" + cantidades_samples[contador] + '</td>';
+                        }
+                    }
+                   // html += '<td>' + suma + "/" + cantidades_samples[contador] + '</td>';
+                    contador++;
+                });
+                if ((suma_total-suma_enviado)==0) {
+                 html += '<td style="color:black;">'   + suma_enviado + "/" + suma_total +'</td>';
+                } else {
+                    if (totales[i]>0) {
+                        html += '<td style="color:#f60000;">'  + suma_enviado + "/" + suma_total + '</td>';
+                    } else {
+                        html += '<td style="color:#126dca;">'   + suma_enviado + "/" + suma_total + '</td>';
+                    }
+                }
+                //html += '<td>' + suma_enviado + "/" + suma_total + '</td>';
+                html += '</tr>';
+               //******************************************************************************************
+               // html += '</tr>';
+                $("#div_tabla_tallas_shipping").css('visibility', 'visible');
+                $(".body_tabla_tallas_customer_shipping").html(html);
+                $("#load_csp").css('display', 'none');
+            }
+        });
+    }
+</script>
+<style>
+
+    input[type=checkbox] {
+        /* Double-sized Checkboxes */
+        -ms-transform: scale(2); /* IE */
+        -moz-transform: scale(2); /* FF */
+        -webkit-transform: scale(2); /* Safari and Chrome */
+        -o-transform: scale(2); /* Opera */
+        padding: 10px;
+    }
+
+    /* Might want to wrap a span around your checkbox text */
+    .checkboxtext {
+        /* Checkbox text */
+        font-size: 110%;
+        display: inline;
+    }
+
+    input[type='radio']:after {
+        width: 15px;
+        height: 15px;
+        border-radius: 15px;
+        top: -2px;
+        left: -1px;
+        position: relative;
+        background-color: #a7afb5;
+        content: '';
+        display: inline-block;
+        visibility: visible;
+        border: 0px solid white;
+    }
+
+    input[type='radio']:checked:after {
+        width: 15px;
+        height: 15px;
+        border-radius: 15px;
+        top: -2px;
+        left: -1px;
+        position: relative;
+        background-color: #ecaf2d;
+        content: '';
+        display: inline-block;
+        visibility: visible;
+        border: 0px solid white;
+    }
+
+    .cabecera_tabla2 {
+        /*background:#3479bf; #46a772*/
+        background: white;
+        color: #3479bf;
+        pointer-events: none;
+        cursor: not-allowed;
+    }
+
+    .cabecera_tabla {
+        /*background:#3479bf; #46a772*/
+        background: #3479bf;
+        color: white;
+        pointer-events: none;
+        cursor: not-allowed;
+    }
+
+    .select2-container--default .select2-selection--single {
+        display: block !important;
+        /*width: 100% !important;*/
+        height: 34px !important;
+        padding: 6px 12px !important;
+        font-size: 14px !important;
+        line-height: 1.42857143 !important;
+        color: #555 !important;
+        background-color: #fff !important;
+        background-image: none !important;
+        border: 1px solid #ccc !important;
+        border-radius: 4px !important;
+        -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075) !important;
+        box-shadow: inset 0 1px 1px rgba(0,0,0,.075) !important;
+        -webkit-transition: border-color ease-in-out .15s,-webkit-box-shadow ease-in-out .15s !important;
+        -o-transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s !important;
+        transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s !important;
+    }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #444;
+            line-height: 20px;
+        }
+
+    .modal-dialog {
+        width: 75% !important;
+        padding: 2em;
+        height: 90% !important;
+        min-height: 90% !important;
+    }
+
+    .modal-content {
+        height: 90% !important;
+    }
+
+    .modal-lg {
+        max-width: 80% !important;
+    }
+
+    a {
+        text-decoration: none !important;
+    }
+
+    .boton_barra_menu, .btn-info {
+        color: #fff;
+        background-color: #3479bf !important;
+        border-color: #3479bf !important;
+    }
+
+    .modal {
+        /*z-index: 4 !important;*/
+    }
+
+    .dataTables_filter {
+    }
+
+    .dropbtn {
+        background-color: #3479bf;
+        color: white;
+        padding: 16px;
+        /*padding: 0.40em;*/
+        font-size: 18px;
+        border: none;
+    }
+
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: white;
+        color: black;
+        min-width: 160px;
+        box-shadow: 1px 5px 25px 1px rgba(0,0,0,0.2);
+        z-index: 1;
+    }
+
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+    .menu {
+        background: #3479bf;
+        border-radius: 5px;
+        border: solid 1px #3479bf;
+        margin-bottom: .5em;
+        margin: 1em;
+    }
+
+    .dropdown-content a:hover {
+        /*background-color: #f1f1f1;
+        color: black;*/
+        background-color: #61b363;
+        color: white;
+    }
+
+    .dropdown:hover .dropdown-content {
+        display: block;
+    }
+
+
+    .modal-header-primary {
+        color: #fff;
+        padding: 9px 15px;
+        border-bottom: 1px solid #eee;
+        background-color: #3479bf;
+        -webkit-border-top-left-radius: 5px;
+        -webkit-border-top-right-radius: 5px;
+        -moz-border-radius-topleft: 5px;
+        -moz-border-radius-topright: 5px;
+        border-top-left-radius: 5px;
+        border-top-right-radius: 5px;
+    }
+
+    .x {
+        transition: transform .25s ease-in-out;
+        color: white !important;
+    }
+
+        .x:hover {
+            transform: rotate(180deg);
+            color: white !important;
+        }
+
+        .x:before {
+            transform: rotate(45deg);
+            transform-origin: center;
+        }
+
+        .x:after {
+            transform: rotate(-45deg);
+            transform-origin: center;
+        }
+
+    tr {
+        cursor: pointer;
+    }
+</style>
+<div id="load_csp" class="load">
+    <div id="spinner" class="imagen_loading" style=""></div>
+</div>
+<div class="container-fluid" style="padding-left:7em; padding-right:2em;">
+    <h2 style="font-weight: bold; color: #3479bf; margin-left: 1em;">CUSTOMER SHIPPING</h2>
+    <div class="panel" style=" height:300px; width:98%; margin-left:2em; overflow:auto; margin-right:1em;border: 1px solid #3479bf; ">
+        <div class="panel-heading" style="padding-bottom: 1.5em;">
+            <label class=" col-form-label">ORDERS</label>
+            <input style="float:right; " type="text" class="form-control validacion " maxlength="30" onkeyup="llamar_llenar_tabla_pedidos_customer_shipping(event)" id="caja_busqueda_pedido_customer_shipping">
+        </div>
+        <div style="overflow:auto;">
+            <table id="" class="table table-striped " style="    margin: 0px; ">
+                <thead class=" cabecera_tabla">
+                    <tr>
+                        <th style="width:5%;">#</th>
+                        <th style="width:10%;">PO</th>
+                        <th style="width:15%;">PURCHASE ORDER</th>
+                        <th style="width:20%;">CUSTOMER</th>
+                        <th style="width:20%;">CUSTOMER ORDER</th>
+                        <th style="width:10%;">DATE CANCEL</th>
+                        <th style="width:10%;">DATE ORDER</th>
+                        <th style="width:10%;">TOTAL UNITS</th>
+                    </tr>
+                </thead>
+            </table>
+            <div style="height:300px; overflow:auto; margin:0px; ">
+                <table id="tabla_po_customer_shipping" class="table table-striped " style=" ">
+                    <tbody class="body_tabla_po_customer_shipping"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="div_tabla_estilos_shipping" class="panel" style=" height:350px; overflow:auto; width:98%; margin-left:2em; overflow:auto; border: 1px solid #3479bf; visibility:hidden; ">
+        <div class="panel-heading" style="">
+            <b>STYLES</b>
+        </div>
+        <div class="row" style="margin: 0px;">
+            <div class="form-group">
+                <div class="form-group col-sm-3 po_csp " style=""> </div>
+                <div class="form-group col-sm-3 customer_csp" style=""> </div>
+                <div class="form-group col-sm-3 customer_final_csp " style=""> </div>
+            </div>
+        </div>
+        <div class="row" style="margin: 0px;">
+            <div class="form-group">
+                <div class="form-group col-sm-3 date_order_csp" style=""> </div>
+                <div class="form-group col-sm-3 date_cancel_csp" style=""> </div>
+                <div class="form-group col-sm-3 units_csp" style=""> </div>
+            </div>
+        </div>
+        <div style="margin:0px; ">
+            <table id="" class="table table-striped " style="margin:0px; ">
+                <thead class=" cabecera_tabla">
+                    <tr><th style="width:10%;">#</th><th style="width:15%;">STYLE</th><th style="width:35%;">DESCRIPTION</th><th style="width:10%;">QTY</th><th style="width:15%;">GENDER</th><th style="width:20%;">COLOR</th></tr>
+                </thead>
+            </table>
+        </div>
+        <div style="height:200px; overflow:auto;">
+            <table id="tabla_estilos_customer_shipping" class="table table-striped " style=" ">
+                <tbody class="body_tabla_estilos_customer_shipping"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="div_tabla_tallas_shipping" class="panel" style=" width:98%; margin-left:2em; overflow:auto; border: 1px solid #3479bf; visibility:hidden; ">
+        <div class="panel-heading" style="">
+            <b>Counted</b>
+        </div>
+        <div class="row" style="margin: 0px;">
+            <div class="form-group">
+                <div class="form-group col-sm-5 estilo_csp " style=""> </div>
+                <div class="form-group col-sm-3 total_estilo_csp" style=""> </div>
+                <div class="form-group col-sm-3 color_csp " style=""> </div>
+            </div>
+        </div>
+        <div style=" ">
+            <table id="tabla_tallas_customer_shipping" class="table table-striped " style=" ">
+                <thead class=" cabecera_tabla cabecera_tabla_tallas_customer_shipping"></thead>
+                <tbody class="body_tabla_tallas_customer_shipping"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+

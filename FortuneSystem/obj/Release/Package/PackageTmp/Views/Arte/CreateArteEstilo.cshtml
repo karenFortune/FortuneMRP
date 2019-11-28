@@ -1,0 +1,131 @@
+﻿@model FortuneSystem.IMAGEN_ARTE_ESTILO
+
+@{
+	ViewBag.Title = "Create Art Style";
+	Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script src="~/Content/dropzone/dist/dropzone.js"></script>
+<link rel="stylesheet" href="~/Content/dropzone/dist/min/dropzone.min.css"/>
+<style>
+	#drop-container {
+		background: #ffffff;
+		min-height: 500px;
+		padding: 10px;
+		border: #07c6f1 2px dashed;
+		max-width: 1000px;
+	}
+
+	.drop-area-text {
+		text-align: center;
+		color: #e0dfdf;
+		font-size: 1.5em;
+		padding-bottom: 20px;
+	}
+
+	.drop-image {
+		display: none;
+	}
+
+	.preview {
+		margin: 20px;
+		width: 150px;
+		height: 150px;
+		display: inline-block;
+	}
+
+	@@media screen and (max-width: 500px) {
+		.preview {
+			margin: 15px;
+			width: 100px;
+			height: 100px;
+		}
+	}
+
+	body {
+    background: rgb(243, 244, 245);
+    height: 100%;
+    color: rgb(100, 108, 127);
+    line-height: 1.4rem;
+    font-family: Roboto, "Open Sans", sans-serif;
+    font-size: 20px;
+    font-weight: 300;
+    text-rendering: optimizeLegibility;
+}
+
+h1 { text-align: center; }
+
+.dropzone {
+    background: white;
+    border-radius: 5px;
+    border: 2px dashed rgb(0, 135, 247);
+    border-image: none;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+	height: 600px;
+}
+</style>
+</div>
+
+<div class="container-fluid" style="padding-left:20em; padding-right:10em;">
+	<div class="panel panel-primary" id="panelArte">
+		<div class="panel-heading">
+			<h2>Add Style Images</h2>
+		</div>
+		<br />
+		<br />
+
+		<div class="form-horizontal">
+			<div class="row">
+				<div class="form-group">
+					<div class="col-sm-1">
+					</div>
+					@*<button id="EliminarImg">Eliminar</button>
+					<button id="SaveImg">Save</button>
+					<div class="col-sm-5">
+						<div id="drop-container">
+							<div class="drop-area-text">Drag and Drop Image Here</div>
+						</div>
+						<img src="" class="drop-image" id="imgArteAdd" />
+				</div>*@
+			</div>
+		</div>
+	
+		<form action="@Url.Action("SaveDropzoneJsUploadedFiles", "Arte")" class="dropzone" id="dropzoneJsForm">
+			<div class="fallback">
+				<input name="file" type="file" multiple />
+			</div>
+		</form>
+		<div class="form-group row">
+			<div class="text-center margin-bottom col-sm-12">
+				<button type="button" class="btn btn-success" id="submit-all" data-toggle="modal">
+					<span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span> SAVE IMAGES
+				</button>
+			</div>
+		</div>
+		<br />
+		<br />
+	</div>
+	</div>
+</div>
+<script>
+			 Dropzone.options.dropzoneJsForm = {
+				 autoProcessQueue: false,
+				 dictRemoveFile: 'DELETE',
+				 addRemoveLinks: true,
+				 maxFilesize: 3.0, 
+				 maxFiles: 16,
+				 parallelUploads: 10,
+				 uploadMultiple: true,				
+
+            init: function () {
+                var submitButton = document.querySelector("#submit-all");
+                var myDropzone = this; 
+                submitButton.addEventListener("click", function () {     
+                    myDropzone.processQueue(); 
+                });                
+            }
+	};
+
+
+</script>

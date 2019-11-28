@@ -1,0 +1,1407 @@
+﻿@model FortuneSystem.Models.POSummary.POSummary
+@section scripts{
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="~/Content/alertifyjs/css/alertify.min.css" />
+    <link rel="stylesheet" href="~/Content/alertifyjs/css/themes/default.min.css" />
+    <link href="~/Content/select2-4.0.5/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="~/Content/alertifyjs/alertify.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+    <script src="~/Scripts/general/obtenerListaTallasPorGenero.js"></script>
+    <script type="text/javascript" src="~/Content/TableDnD-master/js/jquery.tablednd.js"></script>
+
+    <link href="@Url.Content("~/Content/themes/base/jquery-ui.min.css")" rel="stylesheet" />
+    @Scripts.Render("~/Content/jquery-ui-1.12.1.custom/jquery-3.3.1.min.js")
+
+    <script src="~/Scripts/bootstrap.js"></script>
+}
+<script type="text/javascript">
+
+	$(document).on("click", ".classEditStyle", function () {
+		var rowCount = $('.data-Pack').length + 1;
+				var packdiv = '<tr class="data-Pack">' +
+					'<td class="mover" width="10%"><span class="glyphicon glyphicon-fullscreen" aria-hidden="true"></span></td>' +
+					'<td class="datoPack" style="width:1px; display:none;"><input type="text"  name="id-pack" id="id-pack" class="form-control pack" value="' + 0 + '"/ readonly></td>' +
+					'<td class="datoPack" width="20%"><input type="text"  name="f-pack" id="f-pack" class="form-control desPack pack" style="width: 80%;" /></td>' +
+					'<td><button type="button" id="btnDelete" class="pDelete btn btn btn-danger btn-xs" value="4">Delete</button></td>' +
+					'</tr>';
+				$('#tablaPack').append(packdiv);
+	});
+
+		$(document).on("click", ".pkDelete", function () {
+			var $row = $(this).closest("tr");
+			debugger
+			var $text = $row.find(".idPack").val();
+			eliminarPacking($text);
+            $(this).closest("tr").remove();
+		});
+
+		$(document).on("click", ".pDelete", function () {
+            $(this).closest("tr").remove();
+	});
+
+	var cont;
+	var contadorGeneral=0;
+	$(document).ready(function () {
+		 var Cliente = $("#NumCliente").val();
+    if (Cliente == "2") {
+        $("#POFantasy").prop("disabled", false);
+    } else {
+        $("#POFantasy").prop("disabled", true);
+        $("#POFantasy").val("N/A");
+		}
+
+        var tipoS = $("#TipoImpSleeve").val();
+		var tipoS2 = $("#TipoImpSleeve2").val();
+		var tipoB = $("#TipoImpBack").val();
+		if (tipoS == "True") {
+			$("input:checkbox[name=tipoSleeve]").attr('checked',true);
+		}
+		if (tipoS2 ==  "True") {
+			$("input:checkbox[name=tipoSleeve2]").attr('checked',true);
+		}
+		if (tipoB ==  "True") {
+			$("input:checkbox[name=tipoBack]").attr('checked',true);
+        }
+
+		buscar_Packing();
+        $(document).on("click", ".classAdd", function () {
+            var rowCount = $('.data-Talla').length + 1;
+            debugger
+            var contador = cont;
+
+			if (contador != 0) {
+                contador = cont + 1;
+            } else {
+
+				contador = contadorGeneral + 1;
+			}
+
+            var tallasdiv = '<tr class="data-Talla">' +
+                '<td class="mover"><span class="glyphicon glyphicon-fullscreen" aria-hidden="true"></span></td>' +
+                '<td class="datoTalla"><input type="text"  name="f-talla" id="f-talla'+contador+'" class="form-control talla" autocomplete="off" onchange="SepararCadenaInputsTallas('+contador+'); " /></td>' +
+                '<td class="datoTalla"><input type="text" id="l-cantidad'+contador+'" name="l-cantidad" class="form-control l-name01 numCantTall" onchange="SepararCadenaInputsCantidad('+contador+');" onblur="sumar(' + contador + ')"  /></td>' +
+				'<td class="datoTalla"><input type="text" name="s-qtyPC" id="s-qtyPC'+contador+'" class="form-control s-name01 numQtyPCTall"  onchange="SepararCadenaInputsCantidadPC('+contador+');" onfocus="focusingCalidadAdd('+contador+')" onblur="ObtenerSumaQtyPC(' + contador + ')"  value="' + 0 + '" /></td>' +
+				'<td class="datoTalla"><input type="text" id="e-extras' + contador + '"  name="e-extras" class="form-control e-name01 numExtTall" onfocus="focusingExtrasAdd2(' + contador + ')" onChange="CalcularCantidadesPrimeraCalidad(' + contador + ');" value="' + 0 + '"/></td>' +
+                '<td class="datoTalla"><input type="text" id="s-ejemplo'+contador+'" name="s-ejemplo" class="form-control s-name01 numEjmTall" onfocus="focusingAdd2('+contador+')" onblur="CalcularCantidadesPrimeraCalidadEje(' + contador + ');" value="' + 0 + '"/></td>' +
+				'<td><button type="button" id="btnDelete" class="delTalla btn btn btn-danger btn-xs" value="4">Delete</button></td>' +
+				'</tr>';
+            contadorGeneral++;
+            cont = contador;
+            $('#tablaTallas').append(tallasdiv);
+        });
+
+
+
+
+        $(document).on("click", ".deleteTalla", function () {
+            var $row = $(this).closest("tr");
+            var $text = $row.find(".talla").val();
+            eliminarTallas($text);
+            $(this).closest("tr").remove();
+             cont = cont - 1;
+            obtenerTotalesEdicionEstilo();
+        });
+
+		$(document).on("click", ".delTalla", function () {
+            $(this).closest("tr").remove();
+             cont = cont - 1;
+            obtenerTotalesEdicionEstilo();
+		});
+
+
+        $('#selectGenero').select2({
+            placeholder: "Select a gender",
+            dropdownParent: $("#editarEstiloModal"),
+            language: {
+                noResults: function () {
+                    return "There is no result";
+                },
+                searching: function () {
+                    return "Searching..";
+                }
+            }
+        });
+
+        $('#selectEspecialidad').select2({
+            placeholder: "Select a specialty",
+            dropdownParent: $("#editarEstiloModal"),
+            language: {
+                noResults: function () {
+                    return "There is no result";
+                },
+                searching: function () {
+                    return "Searching..";
+                }
+            }
+		});
+
+		        $('#selectFormPack').select2({
+            dropdownParent: $("#editarEstiloModal"),
+            language: {
+                noResults: function () {
+                    return "There is no result";
+                },
+                searching: function () {
+                    return "Searching..";
+                }
+            }
+        });
+
+        $('#selectTela').select2({
+            placeholder: "Select a type of fabric",
+            dropdownParent: $("#editarEstiloModal"),
+            language: {
+                noResults: function () {
+                    return "There is no result";
+                },
+                searching: function () {
+                    return "Searching..";
+                }
+            }
+        });
+
+        $("#selectTipoCamiseta").select2({
+            placeholder: "Select a type of shirt",
+            dropdownParent: $("#editarEstiloModal"),
+            language: {
+                noResults: function () {
+                    return "There is no result";
+                },
+                searching: function () {
+                    return "Searching..";
+                }
+            }
+        });
+
+        //Autocomplete de Estilos Items
+        $("#ItemDescripcion_ItemEstilo").autocomplete({
+            source: function (request, response) {
+                $.ajax({
+                    url: "/POSummary/Autocomplete_Item_Estilo",
+                    type: "POST",
+                    dataType: "json",
+                    data: { keyword: request.term },
+                    success: function (data) {
+                        response($.map(data, function (item) {
+                            return {
+                                label: item.Estilo,
+                                value: item.Estilo,
+                                descripcion: item.Descr,
+                                id: item.Id
+                            };
+                        }));
+                    }
+                });
+            },
+            select: function (event, ui) {
+                var estilo = ui.item.value;
+                var nuevoEstilo = estilo.trim();
+                var numero = validarEstilo(nuevoEstilo);
+                var item = $("#ItemDescripcion_Descripcion").val(ui.item.descripcion);
+				$("#nuevoEstilo").removeClass("btn btn-danger");
+				$("#nuevoEstilo").addClass("btn btn-success");
+				if (item !== "") {
+					$('#nuevoEstilo').attr('disabled', true);
+					$("#modificarEstilo").prop("disabled", false);
+				} else {
+					$('#nuevoEstilo').attr('disabled', false);
+					$("#modificarEstilo").prop("disabled", false);
+				}
+            },
+            minLength: 1,
+            response: function (event, ui) {
+                if (!ui.content.length) {
+
+                    var alert = alertify.alert("Message", 'No style results found.').set('label', 'Aceptar');
+                    alert.set({ transition: 'zoom' });
+                    alert.set('modal', false);
+                    $("#nuevoEstilo").prop("disabled", false);
+					$("#nuevoEstilo").removeClass("btn btn-success");
+				    $("#nuevoEstilo").addClass("btn btn-danger"); 
+                    var itemDes = $("#ItemDescripcion_Descripcion").val('');
+                     $("#modificarEstilo").prop("disabled", true);
+                }
+            }
+        });
+
+
+        //Autocomplete codigo de color
+        $("#CatColores_CodigoColor").autocomplete({
+            source: function (request, response) {
+                $.ajax({
+                    url: "/POSummary/Autocomplete_Color",
+                    type: "POST",
+                    dataType: "json",
+                    data: { keyword: request.term },
+                    success: function (data) {
+                        response($.map(data, function (item) {
+                            return {
+                                label: item.CodigoColor,
+                                value: item.IdColor,
+                                color: item.Color,
+                                id: item.Id
+                            };
+                        }))
+                    },
+                    error: function () {
+                    }
+                })
+            },
+            select: function (event, ui) {
+                var color = $("#CatColores_DescripcionColor").val(ui.item.color);
+                $("#IdColor").val(ui.item.id);
+                $("#nuevoColor").removeClass("btn btn-danger");
+                $("#nuevoColor").addClass("btn btn-success");
+                if (color !== "") {
+                    $('#nuevoColor').attr('disabled', true);
+                    $("#modificarEstilo").prop("disabled", false);
+                } else {
+                    $('#nuevoColor').attr('disabled', false);
+                    $("#modificarEstilo").prop("disabled", false);
+                }
+            },
+            minLength: 1,
+            response: function (event, ui) {
+                if (!ui.content.length) {
+                    var alert = alertify.alert("Message", 'No color results found.').set('label', 'Aceptar');
+                    alert.set({ transition: 'zoom' });
+                    alert.set('modal', false);
+                    $("#nuevoColor").prop("disabled", false);
+					var colorDes = $("#CatColores_DescripcionColor").val('');
+					$("#nuevoColor").removeClass("btn btn-success");
+                    $("#nuevoColor").addClass("btn btn-danger");
+                    $("#modificarEstilo").prop("disabled", true);
+                }
+            }
+        });
+
+       var estilo = $("#ItemDescripcion_ItemEstilo").val();
+        if (estilo != '') {
+            $("#nuevoEstilo").prop("disabled", true);
+        } else {
+            $('#ItemDescripcion_Descripcion').val('');
+            $("#nuevoEstilo").prop("disabled", false);
+        }
+
+        var color = $("#CatColores_CodigoColor").val();
+        if (color != '') {
+            $("#nuevoColor").prop("disabled", true);
+        } else {
+            $("#CatColores_DescripcionColor").val('');
+            $("#nuevoColor").prop("disabled", false);
+        }
+
+        $('#nuevoColor').click(function (e) {
+        var colorEstilo = $("#CatColores_CodigoColor").val();
+        var colorDesc = $("#CatColores_DescripcionColor").val();
+        $.ajax('@Url.Action("Registrarcolor", "Colores")', {
+            data: { CodigoColor: colorEstilo, DescColor: colorDesc },
+            method: 'post'
+        }).done(function (data) {        });
+               $("#nuevoColor").prop("disabled", true);
+		    $("#nuevoColor").removeClass("btn btn-danger");
+			$("#nuevoColor").addClass("btn btn-success");
+        alertify.set('notifier', 'position', 'top-right');
+            alertify.notify('The color was registered correctly.', 'success', 5, null);
+        });
+
+        $('#nuevoEstilo').click(function (e) {
+        var itemEstilo = $("#ItemDescripcion_ItemEstilo").val();
+        var estiloDesc = $("#ItemDescripcion_Descripcion").val();
+        $.ajax('@Url.Action("RegistrarEstilo", "Items")', {
+            data: { ItemEstilo: itemEstilo, DescEstilo: estiloDesc },
+            method: 'post'
+        }).done(function (data) {
+        });
+           $("#nuevoEstilo").prop("disabled", true);
+			$("#nuevoEstilo").removeClass("btn btn-danger");
+			$("#nuevoEstilo").addClass("btn btn-success");
+            alertify.set('notifier', 'position', 'top-right');
+            alertify.notify('The style was registered correctly.', 'success', 5, null);
+    });
+
+       /* $("#ItemDescripcion_ItemEstilo,#CatColores_CodigoColor,#f-talla").on('input', function () {
+            var val = this.value;
+            this.value = val.replace(/[^A-Z\u00f1\u00d1\u0020\s\^0-9]/g, '');
+        });*/
+        $("#Cantidad").on('input', function () {
+            var val = this.value;
+            this.value = val.replace(/^[0-9]\./g, '');
+        });
+
+ 
+        $("#crearTallas").hide();
+
+        //Autocomplete tallas
+        $(function () {
+            var list_datalist = Array();
+            $.ajax({
+                url: '/Tallas/Lista_Tallas',
+                type: 'GET',
+                success: function (data) {
+                    for (var i = 0; i < data.length; i++) {
+                        var html = "";
+                        list_datalist.push(data[i].Talla);
+                    }
+                }
+            })
+            var availableTags = list_datalist;
+            $(document).on("focus keyup", "input.talla", function (event) {
+             $(this).autocomplete({
+                    source: availableTags,
+                    select: function (event, ui) {
+                        event.preventDefault();
+                        this.value = ui.item.label;
+                    },
+                    focus: function (event, ui) {
+                        event.preventDefault();
+                        this.value = ui.item.label;
+                    }
+                });
+            });
+        });
+        var colorDesc = $("#CatColores_DescripcionColor").val();
+        var colorEstilo = $("#CatColores_CodigoColor").val();
+        var talla
+       /* $(function () {
+        });
+        var exists = false;*/
+        buscar_estilos_Edicion();
+
+
+	});
+
+	function eliminarPacking(idPacking) {
+		 $.ajax('@Url.Action("EliminarPacking", "Pedidos")', {
+			 data: { id: idPacking },
+            method: 'post'
+        }).done(function (data) {        });
+                  alertify.set('notifier', 'position', 'top-right');
+                  alertify.notify('The packing was removed correctly.', 'success', 5, null);
+	}
+
+		function obtenerListPack() {
+		var r = 0; var c = 0; var i = 0; var cadena = new Array(2);
+            cadena[0] = ''; cadena[1] = '';
+            var nFilas = $("#tablaPack tbody>tr").length;
+            var nColumnas = $("#tablaPack tr:last td").length;
+            $('#tablaPack tbody>tr').each(function () {
+                r = 0;
+                c = 0;
+                $(this).find("input").each(function () {
+                    $(this).closest('td').find("input").each(function () {
+                        cadena[c] += this.value + "*" ;
+                        c++;
+                    });
+
+                    r++;
+                    });
+                });
+
+            var error = 0;
+            $('#tablaPack').find('td.datoPack').each(function (i, el) {
+
+                var valor = $(el).children().val();
+
+                    if ($(el).children().val() == '') {
+                        error++;
+                        $(el).children().css('border', '2px solid #e03f3f');
+
+                    } else {
+                        $(el).children().css('border', '1px solid #cccccc');
+
+                    }
+		});
+
+		if (error == 0) {
+                return (cadena);
+            }
+
+	}
+
+		function buscar_Packing() {
+		var tempScrollTop = $(window).scrollTop();
+        var id = $("#IdItems").val();
+        $.ajax({
+            url: "/Pedidos/Lista_Packings/" + id,
+            type: "POST",
+            contentType: "application/json;charset=UTF-8",
+            dataType: "json",
+            success: function (jsonData) {
+                var listaT = jsonData.Data.listPack;
+				var html = '';
+				//var cont = 1;
+                $.each(listaT, function (key, item) {
+
+                    html += '<tr>';
+					html += '<td class="mover" style="width:2em;"><span class="glyphicon glyphicon-fullscreen" aria-hidden="true"></span></td>';
+					html += '<td class="datoPack" style="width:1px; display:none;"><input type="text"  name="id-pack" id="id-pack" class="form-control idPack pack" value="' + item.IdPackStyle + '"/ readonly></td>';
+                    html += '<td class="datoPack" width="20%"><input type="text"  style="text-transform:uppercase" name="f-pack" id="f-pack" class="form-control pack" style="width: 80%;" value="' + item.DescripcionPack + '"/></td>';
+                    html += '<td><button type="button" id="btnDelete" class="pkDelete btn btn btn-danger btn-xs" value="4">Delete</button></td>';
+					//cont++;
+					html += '</tr>';
+					//contador = item.IdMillPO;
+				});
+
+               $('.tbodyPack').html(html);
+
+                $(window).scrollTop(tempScrollTop);
+            },
+            error: function (errormessage) { alert(errormessage.responseText); }
+        });
+	}
+
+
+    function buscar_estilos_Edicion() {
+        var tempScrollTop = $(window).scrollTop();
+        var id = $("#IdItems").val();
+        $.ajax({
+            url: "/POSummary/Lista_Tallas_Por_Estilos_Rev/" + id,
+            type: "POST",
+            contentType: "application/json;charset=UTF-8",
+            dataType: "json",
+            success: function (jsonData) {
+                var listaT = jsonData.Data.listaTalla;
+				var html = '';
+				cont = 0;
+                $.each(listaT, function (key, item) {
+                    html += '<tr class="rowE">';
+                    html += '<td class="mover"><span class="glyphicon glyphicon-fullscreen" aria-hidden="true"></span></td>';
+                    html += '<td class="datoTalla"><input type="text" id="f-talla'+cont+'" class="form-control talla" autocomplete="off" onchange="SepararCadenaInputsTallas('+cont+');" value="' + item.Talla + '"/></td>';
+                    html += '<td class="datoTalla"><input type="text" name="l-cantidad" id="l-cantidad'+cont+'" class="form-control l-name01 move numCantTall" onchange="SepararCadenaInputsCantidad('+cont+');" value="' + item.Cantidad + '"  onblur="sumar(' + cont + ')"/></td>';
+					html += '<td class="datoTalla"><input type="text" name="s-qtyPC" id="s-qtyPC'+cont+'" class="form-control s-name01 numQtyPCTall" onfocus="focusingCalidad(' + cont + ')" onchange="SepararCadenaInputsCantidadPC('+cont+');" onblur="ObtenerSumaQtyPC(' + cont + ')"  value="' + item.CantidadPCalidad + '" /></td>';
+					html += '<td class="datoTalla"><input type="text" name="e-extras" id="e-extras'+cont+'" class="form-control e-name01 move numExtTall " onChange="CalcularCantidadesPrimeraCalidad('+cont+');" value="' + item.Extras + '"/></td>';
+                    html += '<td class="datoTalla"><input type="text" name="s-ejemplo" id="s-ejemplo'+cont+'" class="form-control move s-name01 numEjmTall" onfocus="focusing('+cont+')"onChange="CalcularCantidadesPrimeraCalidadEje('+cont+');" value="' + item.Ejemplos + '"/></td>';
+					html += '<td class="datoTalla"><button type="button" id="btnDelete"  class="deleteTalla btn btn btn-danger btn-xs" value="4">Delete</button></td>';
+					html += '</tr>';
+					cont++;
+                });
+
+                    html += '<tr class="rowE">';
+                    html += '<td class="mover"><span class="glyphicon glyphicon-fullscreen" aria-hidden="true"></span></td>';
+                    html += '<td>TOTALS</td>';
+                    html += '<td><input type="text" name="l-Totalcantidad" id="l-Totalcantidad" class="form-control l-name01 move Totalcantidad" value="' +0+ '"  readonly/></td>';
+					html += '<td><input type="text" name="s-TotalqtyPC" id="s-TotalqtyPC" class="form-control s-name01 TotalqtyPC" value="' + 0 + '" readonly/></td>';
+					html += '<td><input type="text" name="e-Totalextras" id="e-Totalextras" class="form-control e-name01 move Totalextras" value="' + 0 + '" readonly/></td>';
+                    html += '<td><input type="text" name="s-Totalejemplo" id="s-Totalejemplo" class="form-control move s-name01 Totalejemplo" value="' + 0 + '" readonly/></td>';
+					html += '</tr>';
+                $('.tbodyTallas').html(html);
+                cont = cont - 1;
+                obtenerTotalesEdicionEstilo();
+                $(window).scrollTop(tempScrollTop);
+            },
+            error: function (errormessage) { alert(errormessage.responseText); }
+        });
+    }
+
+    function obtenerTotalesEdicionEstilo() {
+		var totalQTY = 0;
+		var valorTQ;
+		var totalPQTY = 0;
+		var valorPTQ;
+		var totalExtra = 0;
+		var valorExQ;
+		var totalEjemplo = 0;
+		var valorEjemploQ;
+	var numFilas = $("#tablaTallas tbody>tr").length;
+	for (var i = 0; i <= numFilas-1; i++) {
+		var nombreQ = "#l-cantidad" + i;
+		var valorQ = $(nombreQ).val();
+		if (valorQ === undefined || valorQ === "") {
+			valorQ = "0";
+			totalQTY += parseInt(valorQ);
+		} else {
+			totalQTY += parseInt(valorQ);
+		}		
+		valorTQ = "#l-Totalcantidad";
+
+		var nombrePQ = "#s-qtyPC" + i;
+		var valorPQ = $(nombrePQ).val();
+		if (valorPQ === undefined) {
+			valorPQ = "0";
+			totalPQTY += parseInt(valorPQ);
+		} else {
+			totalPQTY += parseInt(valorPQ);
+		}		
+		valorPTQ = "#s-TotalqtyPC";
+
+	    var nombreEQ = "#e-extras" + i;
+		var valorEQ = $(nombreEQ).val();
+		if (valorEQ === undefined) {
+			valorEQ = "0";
+			totalExtra += parseInt(valorEQ);
+		} else {
+			totalExtra += parseInt(valorEQ);
+		}		
+		valorExQ = "#e-Totalextras";
+
+		var nombreEjemploQ = "#s-ejemplo" + i;
+		var valorEjemQ = $(nombreEjemploQ).val();
+		if (valorEjemQ === undefined) {
+			valorEjemQ = "0";
+			totalEjemplo += parseInt(valorEjemQ);
+		} else {
+			totalEjemplo += parseInt(valorEjemQ);
+		}		
+		valorEjemploQ = "#s-Totalejemplo";
+	   
+		
+		}
+		$(valorTQ).val(parseInt(totalQTY));
+		$(valorPTQ).val(parseInt(totalPQTY));
+		$(valorExQ).val(parseInt(totalExtra));
+		$(valorEjemploQ).val(parseInt(totalEjemplo));
+}
+
+    function focusing(valor) {
+		if ($("#s-ejemplo"+valor).val() == 0) {
+			$("#s-ejemplo"+valor).val('');
+		}
+    }
+
+	 function focusingExtras(valor) {
+        if ($("#e-extras" + valor).val() == "0" || $("#e-extras" + valor).val() == 0) {
+            $("#e-extras" + valor).val('');
+        }
+	}
+
+         function focusingExtrasAdd2(valor) {
+            if ($("#e-extras" + valor).val() == "0" || $("#e-extras" + valor).val() == 0) {
+                $("#e-extras" + valor).val('');
+            }
+        }
+
+        function focusingAdd2(valor) {
+            if ($("#s-ejemplo" + valor).val() == 0) {
+                $("#s-ejemplo" + valor).val('');
+            }
+	}
+
+	function focusingCalidad(valor) {
+        if ($("#s-qtyPC" + valor).val() == "0" || $("#s-qtyPC" + valor).val() == 0) {
+            $("#s-qtyPC" + valor).val('');
+        }
+	}
+
+	function focusingCalidadAdd(valor) {
+        if ($("#s-qtyPC" + valor).val() == "0" || $("#s-qtyPC" + valor).val() == 0) {
+            $("#s-qtyPC" + valor).val('');
+        }
+	}
+
+	function CalcularCantidadesPrimeraCalidad(cont) {
+        var resp;      
+		document.addEventListener("blur", function (event) {
+        var valor = "e-extras" + cont;
+        var val = document.getElementById(valor).value;
+        if (val !== "") {
+            resp = eval(val);
+            document.getElementById(valor).value = resp;
+			}
+		  }, true);
+		var qty = $("#l-cantidad" + cont).val();
+		var cantidadNum = qty === "" ? "0" : qty;
+		var qtyEjem = $("#s-ejemplo" + cont).val();
+		var cantidadEjemNum = qtyEjem === "" ? "0" : qtyEjem;
+		var qtyExtras = $("#e-extras" + cont).val();
+		var cantidadExtrasNum = qtyExtras === "" ? "0" : qtyExtras;
+		var qtyPC = $("#s-qtyPC" + cont).val();
+		var cantidadPrimerCalidad = qtyPC === "" ? "0" : qtyPC;
+		var total = 0;
+		var indicador = $("#Bandera").val();
+		if (parseInt(cantidadExtrasNum) >= 1) {
+			if (parseInt(cantidadNum) === "" || parseInt(cantidadNum) === 0 || parseInt(cantidadNum) === "0") {
+				$("#Bandera").val(2);
+				total = parseInt(cantidadPrimerCalidad) + parseInt(cantidadEjemNum) + parseInt(cantidadExtrasNum);
+				$("#l-cantidad" + cont).val(total);
+			}
+			if (parseInt(cantidadPrimerCalidad) === "" || parseInt(cantidadPrimerCalidad) === 0 || parseInt(cantidadPrimerCalidad) === "0") {
+				$("#Bandera").val(3);
+				total = parseInt(cantidadNum) - parseInt(cantidadEjemNum) - parseInt(cantidadExtrasNum);
+				$("#s-qtyPC" + cont).val(total);
+			}
+
+			if ((parseInt(cantidadNum) !== "" || parseInt(cantidadNum) !== 0 || parseInt(cantidadNum) !== "0") && indicador === "2") {
+				$("#Bandera").val(2);
+				total = parseInt(cantidadPrimerCalidad) + parseInt(cantidadEjemNum) + parseInt(cantidadExtrasNum);
+				$("#l-cantidad" + cont).val(total);
+			}
+			if ((parseInt(cantidadPrimerCalidad) !== "" || parseInt(cantidadPrimerCalidad) !== 0 || parseInt(cantidadPrimerCalidad) !== "0") && indicador === "3") {
+				$("#Bandera").val(3);
+				total = parseInt(cantidadNum) - parseInt(cantidadEjemNum) - parseInt(cantidadExtrasNum);
+				$("#s-qtyPC" + cont).val(total);
+			}
+		}else {
+			if ((parseInt(cantidadNum) !== "" || parseInt(cantidadNum) !== 0 || parseInt(cantidadNum) !== "0") && indicador === "2") {
+				$("#Bandera").val(2);
+				total = parseInt(cantidadPrimerCalidad) + parseInt(cantidadEjemNum) + parseInt(cantidadExtrasNum);
+				$("#l-cantidad" + cont).val(total);
+			}
+			if ((parseInt(cantidadPrimerCalidad) !== "" || parseInt(cantidadPrimerCalidad) != 0 || parseInt(cantidadPrimerCalidad) !== "0") && indicador === "3") {
+				$("#Bandera").val(3);
+				total = parseInt(cantidadNum) - parseInt(cantidadEjemNum) - parseInt(cantidadExtrasNum);
+				$("#s-qtyPC" + cont).val(total);
+			}
+        }
+          obtenerTotalesEdicionEstilo();
+	}
+
+    function SepararCadenaInputsCantidad(cont) {
+	var numFilas = $("#tablaTallas tbody>tr").length;
+		var cadena = $("#l-cantidad" + cont).val();
+		var nombres = cadena.split(" ");
+			for (var i = 0; i <= numFilas - 1; i++) {			
+				var dato =nombres[i];
+				 $("#l-cantidad" + i).val(dato);
+			}
+		obtenerTotalesEdicionEstilo();
+	}
+
+		function SepararCadenaInputsCantidadPC(cont) {
+	var numFilas = $("#tablaTallas tbody>tr").length;
+		var cadena = $("#s-qtyPC" + cont).val();
+		var nombres = cadena.split(" ");
+			for (var i = 0; i <= numFilas - 1; i++) {			
+				var dato =nombres[i];
+				 $("#s-qtyPC" + i).val(dato);
+			}
+		obtenerTotalesEdicionEstilo();
+	}
+
+	function SepararCadenaInputsTallas(cont) {
+	var numFilas = $("#tablaTallas tbody>tr").length;
+		var cadena = $("#f-talla" + cont).val();
+		var nombres = cadena.split(" ");
+			for (var i = 0; i <= numFilas - 1; i++) {			
+				var dato =nombres[i];
+				 $("#f-talla" + i).val(dato);
+			}
+	}
+
+	function CalcularCantidadesPrimeraCalidadEje(cont) {
+		 var resp;
+		document.addEventListener("blur", function (event) {
+        var valor = "s-ejemplo" + cont;
+        var val = document.getElementById(valor).value;
+        if (val !== "") {
+            resp = eval(val);
+            document.getElementById(valor).value = resp;
+			}
+		  }, true);
+		var qty = $("#l-cantidad" + cont).val();
+		var cantidadNum = qty === "" ? "0" : qty;
+		var qtyEjem = $("#s-ejemplo" + cont).val();
+		var cantidadEjemNum = qtyEjem === "" ? "0" : qtyEjem;
+		var qtyExtras = $("#e-extras" + cont).val();
+		var cantidadExtrasNum = qtyExtras === "" ? "0" : qtyExtras;
+		var qtyPC = $("#s-qtyPC" + cont).val();
+		var cantidadPrimerCalidad = qtyPC === "" ? "0" : qtyPC;
+		var total = 0;
+		var indicador = $("#Bandera").val();
+		if (parseInt(cantidadEjemNum) >= 1) {
+			if (parseInt(cantidadNum) === "" || parseInt(cantidadNum) === 0 || parseInt(cantidadNum) === "0") {
+				$("#Bandera").val(2);
+				total = parseInt(cantidadPrimerCalidad) + parseInt(cantidadEjemNum) + parseInt(cantidadExtrasNum);
+				$("#l-cantidad" + cont).val(total);
+			}
+			if (parseInt(cantidadPrimerCalidad) === "" || parseInt(cantidadPrimerCalidad) === 0 || parseInt(cantidadPrimerCalidad) === "0") {
+				$("#Bandera").val(3);
+				total = parseInt(cantidadNum) - parseInt(cantidadEjemNum) - parseInt(cantidadExtrasNum);
+				$("#s-qtyPC" + cont).val(total);
+			}
+
+			if ((parseInt(cantidadNum) !== "" || parseInt(cantidadNum) !== 0 || parseInt(cantidadNum) !== "0") && indicador === "2") {
+				$("#Bandera").val(2);
+				total = parseInt(cantidadPrimerCalidad) + parseInt(cantidadEjemNum) + parseInt(cantidadExtrasNum);
+				$("#l-cantidad" + cont).val(total);
+			}
+			if ((parseInt(cantidadPrimerCalidad) !== "" || parseInt(cantidadPrimerCalidad) != 0 || parseInt(cantidadPrimerCalidad) !== "0") && indicador === "3") {
+				$("#Bandera").val(3);
+				total = parseInt(cantidadNum) - parseInt(cantidadEjemNum) - parseInt(cantidadExtrasNum);
+				$("#s-qtyPC" + cont).val(total);
+			}
+
+		} else {
+			if ((parseInt(cantidadNum) !== "" || parseInt(cantidadNum) !== 0 || parseInt(cantidadNum) !== "0") && indicador === "2") {
+				$("#Bandera").val(2);
+				total = parseInt(cantidadPrimerCalidad) + parseInt(cantidadEjemNum) + parseInt(cantidadExtrasNum);
+				$("#l-cantidad" + cont).val(total);
+			}
+			if ((parseInt(cantidadPrimerCalidad) !== "" || parseInt(cantidadPrimerCalidad) != 0 || parseInt(cantidadPrimerCalidad) !== "0") && indicador === "3") {
+				$("#Bandera").val(3);
+				total = parseInt(cantidadNum) - parseInt(cantidadEjemNum) - parseInt(cantidadExtrasNum);
+				$("#s-qtyPC" + cont).val(total);
+			}
+        }
+          obtenerTotalesEdicionEstilo();
+    }
+
+	 $(function(){
+        $(document).on('click','input[type=text]',function(){ this.select(); });
+    });
+
+//Desplazamiento
+$('.tbodyTallas').keydown(function(e){
+    var $table = $(this);
+    var $active = $('input:focus,select:focus',$table);
+    var $next = null;
+    var focusableQuery = 'input:visible,select:visible,textarea:visible';
+    var position = parseInt( $active.closest('td').index()) + 1;
+    switch(e.keyCode){
+        case 37: // <Left>
+            $next = $active.parent('td').prev().find(focusableQuery);
+            break;
+        case 38: // <Up>
+            $next = $active
+                .closest('tr')
+                .prev()
+                .find('td:nth-child(' + position + ')')
+                .find(focusableQuery);
+
+            break;
+        case 39: // <Right>
+            $next = $active.closest('td').next().find(focusableQuery);
+            break;
+        case 40: // <Down>
+            $next = $active
+                .closest('tr')
+                .next()
+                .find('td:nth-child(' + position + ')')
+                .find(focusableQuery);
+            break;
+    }
+    if($next && $next.length)
+    {
+        $next.focus();
+    }
+});
+
+
+    function eliminarTallas(talla) {
+            var idEstilo = $("#IdItems").val();
+           $.ajax('@Url.Action("EliminarTallaPorEstilo", "POSummary")', {
+            data: { estilo: idEstilo, talla: talla },
+            method: 'post'
+        }).done(function (data) {        });
+                  alertify.set('notifier', 'position', 'top-right');
+                  alertify.notify('The size was removed correctly.', 'success', 5, null);
+    }
+
+    function buscarTipoCamiseta(tipoProd) {
+        $('#selectTipoCamiseta option').each(function (i, e) {
+            if (this.value == tipoProd) {
+                    $(this).attr('selected', 'selected');
+                $(this).val(tipoProd).change();
+                }
+            });
+    }
+
+
+    function buscarGenero(genero) {
+        $('#selectGenero option').each(function (i, e) {
+            if (this.value == genero) {
+                $(this).attr('selected', 'selected');
+                $(this).val(genero).change();
+            }
+        });
+    }
+
+    function validarEstilo(estilo) {
+        const re = /^([A-Z]{4})([0-9A-Z]{3})([A-Z]{1})([A-Z]{2})/;
+        var validar = estilo.match(re);
+        if (validar != null) {
+            var licencia = validar[1];
+            var genero = validar[3];
+            var tipoProd = validar[4];
+        }
+        var numero;
+        if (!validar) {
+            numero = 0;
+            return numero;
+        } else {
+            numero = 1;
+            buscarTipoCamiseta(tipoProd);
+           // buscarGenero(genero);
+            return numero;
+        }
+    }
+
+    function InputToUpper(obj) {
+        if (obj.value != "") {
+            obj.value = obj.value.toUpperCase();
+        }
+    }
+
+        $(document).on("click", "#modificarEstilo", function () {
+         var IDEstilo = $("#IdItems").val();
+		var IDPEDIDO = $("#PedidosId").val();
+			var lista = [];
+            lista = obtenerListPack();
+			var datos = JSON.stringify(lista);
+            var obj = datos;
+            obj = JSON.parse(obj);
+        actualizar_Datos_Estilo(IDEstilo, IDPEDIDO, obj);
+
+        });
+
+    $(document).on("click", "#modificarTallas", function () {
+        debugger
+        var r = 0; var c = 0; var i = 0; var cadena = new Array(5);
+        cadena[0] = ''; cadena[1] = ''; cadena[2] = ''; cadena[3] = ''; cadena[4] = '';
+        var nFilas = $("#tablaTallas tbody>tr").length;
+        var nColumnas = $("#tablaTallas tr:last td").length;
+        $('#tablaTallas tbody>tr').each(function () {
+            r = 0;
+            c = 0;
+            $(this).find("input").each(function () {
+                $(this).closest('td').find("input").each(function () {
+                    cadena[c] += this.value + "*";
+                    c++;
+                });
+                r++;
+            });
+        });
+        var error = 0;
+        $('#tablaTallas ').find('td.datoTalla').each(function (i, el) {
+            var valor = $(el).children().val();
+            if (valor == '' ) {
+                error++;
+                $(el).children().css('border', '2px solid #e03f3f');
+            } else {
+                $(el).children().css('border', '1px solid #cccccc');
+            }
+		});
+        enviarListaTalla(cadena, error);
+
+    });
+
+    /*$(document).ready(function () {
+        $('#modificarEstilo').bind('click', submit_click);
+        function submit_click(event) {
+            obtenerTallas();
+        }
+       function obtenerTallas() {
+            var r = 0; var c = 0; var i = 0; var cadena = new Array(4);
+            cadena[0] = ''; cadena[1] = ''; cadena[2] = ''; cadena[3] = '';
+            var nFilas = $("#tablaTallas tbody>tr").length;
+            var nColumnas = $("#tablaTallas tr:last td").length;
+            $('#tablaTallas tbody>tr').each(function () {
+                r = 0;
+                c = 0;
+                $(this).find("input").each(function () {
+                    $(this).closest('td').find("input").each(function () {
+                        cadena[c] += this.value + "*" ;
+                        c++;
+                    });
+                    r++;
+                    });
+                });
+            debugger
+            var error = 0;
+            $('#tablaTallas').find('td').each(function (i, el) {
+                var valor = $(el).children().val();
+
+                    if ($(el).children().val() == '') {
+                        error++;
+                        $(el).children().css('border', '2px solid #e03f3f');
+                    } else {
+                        $(el).children().css('border', '1px solid #cccccc');
+                }
+            });
+           enviarListaTalla(cadena, error);
+        }
+    });*/
+
+    function redireccionarPagina() {
+        window.location = '/pedidos/Index';
+    }
+    function enviarListaTalla(cadena, error) {
+        var IDEstilo = $("#IdItems").val();
+        var IDPEDIDO = $("#PedidosId").val();
+        if (error != 0) {
+            var alert = alertify.alert("Message", 'All fields are required.').set('label', 'Aceptar');
+            alert.set({ transition: 'zoom' });
+            alert.set('modal', false);
+        } else {
+            $("#modificarEstilo").prop("disabled", true);
+            $.ajax({
+                url: "/POSummary/Actualizar_Info_Estilo",
+                datatType: 'json',
+                data: JSON.stringify({ ListTalla: cadena, IdEstilo: IDEstilo }),
+                cache: false,
+                type: 'POST',
+                contentType: 'application/json',
+                success: function (data) {
+                    $("#loading").css('display', 'inline');
+                    var ID = $("#PedidosId").val();
+                    $("#editarEstiloModal").modal("hide");   //Revisar por que se muestran tantos mensajes de notificacion
+                    buscar_estilos(ID);
+                    alertify.notify('The style were updated correctly.', 'success', 5, null);
+                    setTimeout(function () { $("#loading").css('display', 'none'); }, 3000);
+                   // setTimeout("redireccionarPagina()", 900);
+                }/*,
+                error: function (xhr, ajaxOptions, thrownError) {
+                   // showError(xhr.status, xhr.responseText);
+                    if (data.error == 1) {
+                        alertify.notify('Verificar.', 'error', 5, null);
+                    }
+                }*/
+            });
+        }
+    }
+
+    function actualizar_Datos_Estilo(IDEstilo, IDPEDIDO, obj) {
+            var error = 0;
+        $(".nuevo_item").each(function () {
+                error;
+                var id = $(this).attr('id');
+                if ($(this).val() == '') {
+                    $("#" + id).css('border', '2px solid #e03f3f');
+                    error++;
+
+                } else {
+                    $("#" + id).css('border', '1px solid #cccccc');
+                }
+            });
+            if (error != 0) {
+                var alert = alertify.alert("Message", 'All fields are required.').set('label', 'Aceptar');
+                alert.set({ transition: 'zoom' });
+                alert.set('modal', false);
+			} else {
+                $("#nuevoItem").prop("disabled", true);
+                $("#crearTallas").show();
+                var EstiloItem = $("#ItemDescripcion_ItemEstilo").val();
+                var IdColor = $("#CatColores_CodigoColor").val();
+                var Cantidad = $("#CantidadT").val();
+                var Precio = $("#Precio").val();
+                var IdGenero = $("#selectGenero option:selected").val();
+                var IdTela = $("#selectTela option:selected").val();
+                var TipoCamiseta = $("#selectTipoCamiseta option:selected").val();
+				var Especialidad = $("#selectEspecialidad option:selected").val();
+                var TipoFormaPack = $("#selectFormPack option:selected").val();
+                var TipoSleeve = $('input:checkbox[name=tipoSleeve]:checked').val();
+				var TipoSleeve2 = $('input:checkbox[name=tipoSleeve2]:checked').val();
+				var TipoBack = $('input:checkbox[name=tipoBack]:checked').val();
+				var TipoFront = $('input:checkbox[name=tipoFront]:checked').val();
+				var POFantasy = $("#POFantasy").val();
+				var TipoImpresion = "";
+
+				if (TipoFront != "" && TipoFront != undefined) {
+					TipoImpresion = TipoFront + ",";
+				}
+				if (TipoSleeve2 != "" && TipoSleeve2 != undefined) {
+					TipoImpresion += TipoSleeve2 + ",";
+				}
+				if (TipoBack != "" && TipoBack != undefined) {
+					TipoImpresion += TipoBack + ",";
+				}
+				if (TipoSleeve != "" && TipoSleeve != undefined) {
+					TipoImpresion += TipoSleeve + ",";
+                }
+                $.ajax({
+                    url: "/POSummary/Actualizar_Edicion_Estilo",
+                    datatType: 'json',
+                    data: JSON.stringify({ EstiloItem: EstiloItem, IdColor: IdColor, Cantidad: Cantidad, Precio: Precio, IdGenero: IdGenero, TipoCamiseta: TipoCamiseta, IdTela: IdTela, IdEspecialidad: Especialidad, IdEstilo: IDEstilo, PedidoId: IDPEDIDO, IdTipoFormPack: TipoFormaPack, TipoImpresion: TipoImpresion, POFantasy: POFantasy, ListaTypePack: obj }),
+                    //  method: 'get',
+                    type: 'POST',
+                    async: true,
+                    contentType: 'application/json',
+                    success: function (data) {
+                    },
+                }).done(function (data) {
+                });
+                // alertify.set('notifier', 'position', 'top-right');
+                // alertify.notify('The style was registered correctly.', 'success', 5, null);
+            }
+
+        }
+
+    function limpiarFormItems() {
+        $('#ItemDescripcion_ItemEstilo').val('');
+        $('#ItemDescripcion_Descripcion').val('');
+        $('#CatColores_CodigoColor').val('');
+        $('#CatColores_DescripcionColor').val('');
+        $('#CantidadT').val(0);
+        $("#nuevoColor").prop("disabled", false);
+        $("#nuevoEstilo").prop("disabled", false);
+        limpiarInptCant();
+        limpiarInptExt();
+        limpiarInptEjm();
+        limpiarInptPC();
+    }
+    function limpiarInptCant() {
+        $(".numCantTall").each(function () {
+            $(this).val('');
+        });
+    }
+
+    function limpiarInptExt() {
+        $(".numExtTall").each(function () {
+            $(this).val('0');
+        });
+    }
+
+    function limpiarInptEjm() {
+        $(".numEjmTall").each(function () {
+            $(this).val('0');
+        });
+    }
+
+    function limpiarInptPC() {
+        $(".numQtyPCTall").each(function () {
+            $(this).val('0');
+        });
+    }
+
+    $(document).ready(function () {
+        $('.tbodyTallas').sortable();
+	});
+	    //Sumar cantidades
+    var rep;
+    document.addEventListener("blur", function (event) {
+        var val = document.getElementById("CantidadT").value;
+        if (val !== "") {
+            rep = eval(val);
+            document.getElementById("CantidadT").value = rep;
+        }
+	}, true);
+
+    function sumar(indicador) {
+        var resp;
+		document.addEventListener("blur", function (event) {
+        var valor = "l-cantidad" + indicador;
+        var val = document.getElementById(valor).value;
+        if (val !== "") {
+            resp = eval(val);
+            document.getElementById(valor).value = resp;
+			}
+		}, true);
+		obtenerTotalesEdicionEstilo();
+    }
+
+    function sumarEjemplo(indicador) {
+        var resp;
+        document.addEventListener("blur", function (event) {
+        var valor = "s-ejemplo" + indicador;
+        var val = document.getElementById(valor).value;
+        if (val !== "") {
+            resp = eval(val);
+            document.getElementById(valor).value = resp;
+			}
+		}, true);
+		obtenerTotalesEdicionEstilo();
+	}
+
+	function ObtenerSumaEjemplo(indicadorEjemplo) {
+		  var resp;
+		document.addEventListener("blur", function (event) {
+        var valor = "s-ejemplo" + indicadorEjemplo;
+        var val = document.getElementById(valor).value;
+        if (val !== "") {
+            resp = eval(val);
+            document.getElementById(valor).value = resp;
+			}
+        }, true);
+        obtenerTotalesEdicionEstilo();
+	}
+
+	  function ObtenerSumaQtyPC(indicadorCalidad) {
+        var resp;
+		document.addEventListener("blur", function (event) {
+        var valor = "s-qtyPC" + indicadorCalidad;
+        var val = document.getElementById(valor).value;
+        if (val !== "") {
+            resp = eval(val);
+            document.getElementById(valor).value = resp;
+			}
+        }, true);
+          obtenerTotalesEdicionEstilo();
+    }
+
+</script>
+<style>
+    .ui-autocomplete {
+        position: absolute;
+        z-index: 2150000000 !important;
+        border: 2px solid #ccc;
+        padding: 5px 0;
+        border-radius: 2px;
+        cursor: default;
+        height: 200px;
+        overflow-y: scroll;
+        overflow-x: hidden;
+    }
+
+    .classTipoPack {
+        color: white !important;
+        background: #709ec5 !important;
+    }
+
+    .containerTipo {
+        display: inline-block;
+        position: relative;
+        padding-left: 35px;
+        margin-bottom: 12px;
+        cursor: pointer;
+        font-size: 15px;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+
+
+        /* Hide the browser's default checkbox */
+        .containerTipo input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
+    /* Create a custom checkbox */
+    .checkmark {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 25px;
+        width: 25px;
+        background-color: #eee;
+    }
+
+    /* On mouse-over, add a grey background color */
+    .containerTipo:hover input ~ .checkmark {
+        background-color: #ccc;
+    }
+
+    /* When the checkbox is checked, add a blue background */
+    .containerTipo input:checked ~ .checkmark {
+        background-color: #2196F3;
+    }
+
+    /* Create the checkmark/indicator (hidden when not checked) */
+    .checkmark:after {
+        content: "";
+        position: absolute;
+        display: none;
+    }
+
+    /* Show the checkmark when checked */
+    .containerTipo input:checked ~ .checkmark:after {
+        display: block;
+    }
+
+    /* Style the checkmark/indicator */
+    .containerTipo .checkmark:after {
+        left: 9px;
+        top: 5px;
+        width: 5px;
+        height: 10px;
+        border: solid white;
+        border-width: 0 3px 3px 0;
+        -webkit-transform: rotate(45deg);
+        -ms-transform: rotate(45deg);
+        transform: rotate(45deg);
+    }
+</style>
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+
+    <div class="form-horizontal">
+        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+        @Html.HiddenFor(model => model.IdItems)
+        @Html.HiddenFor(model => model.IdColor)
+        @Html.HiddenFor(model => model.PedidosId)
+        @Html.HiddenFor(model => model.TipoImpBack)
+        @Html.HiddenFor(model => model.TipoImpSleeve)
+        @Html.HiddenFor(model => model.TipoImpSleeve2)
+        @Html.HiddenFor(model => model.Bandera)
+        @Html.HiddenFor(model => model.NumCliente)
+
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h4>Edit Style</h4>
+            </div>
+            <div class="container-fluid">
+                <div class="form-row ">
+                    <div class="form-group col-md-4">
+                        @Html.LabelFor(model => model.ItemDescripcion.ItemEstilo, htmlAttributes: new { @class = "control-label" })
+                        @Html.EditorFor(model => model.ItemDescripcion.ItemEstilo, new { htmlAttributes = new { @class = "form-control nuevo_item", @onkeyup = "InputToUpper(this);" } })
+                        @Html.ValidationMessageFor(model => model.ItemDescripcion.ItemEstilo, "", new { @class = "text-danger" })
+                    </div>
+                    <div class="form-group col-sm-3">
+                        @Html.LabelFor(model => model.CatTipoFormPack.TipoFormPack, htmlAttributes: new { @class = "control-label " }) <br />
+                        @Html.DropDownList("TipoFormPack", (SelectList)ViewBag.listTipoFormPack, string.Empty, new { @class = "form-control nuevo_item", @id = "selectFormPack", @name = "state", @style = "width: 60%;" })
+                        @Html.ValidationMessageFor(model => model.IdTipoFormPack, "", new { @class = "text-danger" })
+                    </div>
+                    <div class="form-group col-md-4">
+                        @Html.LabelFor(model => model.ItemDescripcion.Descripcion, htmlAttributes: new { @class = "control-label" })
+                        @Html.EditorFor(model => model.ItemDescripcion.Descripcion, new { htmlAttributes = new { @class = "form-control nuevo_item", @onkeyup = "InputToUpper(this);" } })
+                        @Html.ValidationMessageFor(model => model.ItemDescripcion.Descripcion, "", new { @class = "text-danger" })
+                    </div>
+                    <div class="form-group col-md-2">
+                        <br />
+                        <button type="button" class="btn btn-success" id="nuevoEstilo" data-toggle="modal">
+                            <span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span> Add Style
+                        </button>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <br />
+                        <label class="containerTipo">Front<input type="checkbox" name="tipoFront" id="tipoFront" value="Front" checked="checked"><span class="checkmark"></span></label>
+                        <label class="containerTipo">Sleeve1<input type="checkbox" name="tipoSleeve" id="tipoSleeve" value="Sleeve"><span class="checkmark"></span></label>
+                        <label class="containerTipo">Sleeve2<input type="checkbox" name="tipoSleeve2" id="tipoSleeve2" value="Sleeve2"><span class="checkmark"></span></label>
+                        <label class="containerTipo">Back<input type="checkbox" name="tipoBack" id="tipoBack" value="Back"><span class="checkmark"></span></label>
+                    </div>
+                    <div class="form-group col-md-4">
+                        @Html.LabelFor(model => model.POFantasy, htmlAttributes: new { @class = "control-label" })
+                        @Html.EditorFor(model => model.POFantasy, new { htmlAttributes = new { @class = "form-control nuevo_item", @style = "text-transform:uppercase" } })
+                        @Html.ValidationMessageFor(model => model.POFantasy, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+            </div>
+            <hr />
+            <div class="container-fluid">
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        @Html.LabelFor(model => model.CatColores.CodigoColor, htmlAttributes: new { @class = "control-label" })
+                        @Html.EditorFor(model => model.CatColores.CodigoColor, new { htmlAttributes = new { @class = "form-control nuevo_item", @onkeyup = "InputToUpper(this);" } })
+                        @Html.ValidationMessageFor(model => model.CatColores.CodigoColor, "", new { @class = "text-danger" })
+
+                    </div>
+                    <div class="form-group col-md-4">
+                        @Html.LabelFor(model => model.CatColores.DescripcionColor, htmlAttributes: new { @class = "control-label" })
+                        @Html.EditorFor(model => model.CatColores.DescripcionColor, new { htmlAttributes = new { @class = "form-control nuevo_item", @onkeyup = "InputToUpper(this);" } })
+                        @Html.ValidationMessageFor(model => model.CatColores.DescripcionColor, "", new { @class = "text-danger" })
+                    </div>
+                    <div class="form-group col-md-3">
+                        <br />
+                        <button type="button" class="btn btn-success" id="nuevoColor" data-toggle="modal">
+                            <span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span> Add Color
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <hr />
+            <div class="container-fluid">
+                <div class="form-row">
+                    <div class="form-group col-sm-4">
+                        @Html.LabelFor(model => model.CantidadT, htmlAttributes: new { @class = "control-label" })
+                        @Html.EditorFor(model => model.CantidadT, new { htmlAttributes = new { @class = "form-control nuevo_item" } })
+                        @Html.ValidationMessageFor(model => model.CantidadT, "", new { @class = "text-danger" })
+                    </div>
+
+                    <div class="form-group col-sm-4">
+                        @Html.LabelFor(model => model.Precio, htmlAttributes: new { @class = "control-label" })
+                        @Html.EditorFor(model => model.Precio, new { htmlAttributes = new { @class = "form-control nuevo_item" } })
+                        @Html.ValidationMessageFor(model => model.Precio, "", new { @class = "text-danger" })
+
+                    </div>
+                    <div class="form-group col-sm-4">
+                        @Html.LabelFor(model => model.CatEspecialidades.Especialidad, htmlAttributes: new { @class = "control-label " }) <br />
+                        @Html.DropDownList("Especialidad", (SelectList)ViewBag.listEspecialidad, string.Empty, new { @class = "form-control nuevo_item", @id = "selectEspecialidad", @name = "state", @style = "width: 60%;" })
+                        @Html.ValidationMessageFor(model => model.IdEspecialidad, "", new { @class = "text-danger" })
+
+                    </div>
+
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="form-row">
+                    <div class="form-group col-sm-4 estilo">
+                        @Html.LabelFor(model => model.IdGenero, htmlAttributes: new { @class = "control-label " }) <br />
+                        @Html.DropDownList("Genero", (SelectList)ViewBag.listGenero, new { @class = "form-control nuevo_item", @id = "selectGenero", @name = "state", @style = "width: 80%;" })
+                        @Html.ValidationMessageFor(model => model.IdGenero, "", new { @class = "text-danger" })
+                    </div>
+                    <div class="form-group col-sm-4">
+                        @Html.LabelFor(model => model.IdTela, htmlAttributes: new { @class = "control-label " }) <br />
+                        @Html.DropDownList("Tela", (SelectList)ViewBag.listTela, new { @class = "form-control nuevo_item", @id = "selectTela", @name = "state", @style = "width: 80%;" })
+                        @Html.ValidationMessageFor(model => model.IdTela, "", new { @class = "text-danger" })
+                    </div>
+                    <div class="form-group col-sm-4">
+                        @Html.LabelFor(model => model.TipoCamiseta, htmlAttributes: new { @class = "control-label " }) <br />
+                        @Html.DropDownList("DescripcionTipo", (SelectList)ViewBag.listTipoCamiseta, string.Empty, new { @class = "form-control nuevo_item", @id = "selectTipoCamiseta", @name = "state", @style = "width: 80%;" })
+                        @Html.ValidationMessageFor(model => model.TipoCamiseta, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="form-group">
+                    <div class="panel-group">
+                        <div class="panel panel-title">
+                            <div class="panel-heading classTipoPack">Reception of type of packing</div>
+                            <div class="panel-body">
+                                <button type="button" id="btnAddPack" class="btn btn-xs btn-primary classEditStyle">+ New Pack</button>
+                                <table class="table" id="tablaPack" style="margin:0px; padding:0px;">
+                                    <thead>
+                                        <tr>
+                                            <th class="index"><span class="glyphicon glyphicon-fullscreen" aria-hidden="true" /></th>
+                                            <th>Item Packing</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="tbodyPack"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <br />
+                </div>
+            </div>
+            <div class="form-group">
+                <br />
+                <br />
+                <div class="text-center margin-bottom col-sm-12">
+                    <button type="button" id="modificarEstilo" class="btn btn-success" data-toggle="modal">
+                        <span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span> Modify Style
+                    </button>
+                </div>
+                <br />
+                <br />
+            </div>
+        </div>
+    </div>
+    @*style="visibility:hidden;"*@
+<div class="panel panel-primary">
+    <div class="panel-heading">
+        <h4>Edit Size</h4>
+    </div>
+    <div class="container-fluid">
+        <br />
+        <button type="button" id="btnAdd" class="btn btn-xs btn-primary classAdd">+ New Size</button>
+        <table class="table" id="tablaTallas">
+            <thead>
+                <tr>
+                    <th class="index"><span class="glyphicon glyphicon-fullscreen" aria-hidden="true" /></th>
+                    <th>Size</th>
+                    <th>Quantity</th>
+                    <th>1rst Quantity</th>
+                    <th>Extra</th>
+                    <th>Examples</th>
+                </tr>
+            </thead>
+            <tbody class="tbodyTallas"></tbody>
+        </table>
+
+        @*<button type="button" id="nuevaTalla" class="btn btn-success btn-md pull-right btn-sm"><span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span> Modificar Tallas</button>*@
+        <br />
+        <br />
+    </div>
+    <div class="form-group">
+        <br />
+        <br />
+        <div class="text-center margin-bottom col-sm-12">
+            <button type="button" id="modificarTallas" class="btn btn-success" data-toggle="modal">
+                <span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span> Modify Sizes
+            </button>
+        </div>
+        <br />
+        <br />
+    </div>
+</div>
+}
+

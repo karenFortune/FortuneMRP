@@ -1,0 +1,82 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Schema Namespace="FortuneTestModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012.Azure" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+  <EntityType Name="ARTE">
+    <Key>
+      <PropertyRef Name="IdArte" />
+    </Key>
+    <Property Name="IdArte" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="IdImgArte" Type="int" />
+    <Property Name="IdSummary" Type="int" />
+  </EntityType>
+  <EntityType Name="IMAGEN_ARTE">
+    <Key>
+      <PropertyRef Name="IdImgArte" />
+    </Key>
+    <Property Name="IdImgArte" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="IdEstilo" Type="int" />
+    <Property Name="StatusArte" Type="int" />
+    <Property Name="StatusPNL" Type="int" />
+    <Property Name="extensionArte" Type="varchar" MaxLength="100" />
+    <Property Name="extensionPNL" Type="varchar" MaxLength="100" />
+    <Property Name="fecha" Type="date" />
+    <Property Name="combos" Type="varchar" MaxLength="300" />
+    <Property Name="comentarios" Type="varchar" MaxLength="300" />
+    <Property Name="idUsuario" Type="int" />
+  </EntityType>
+  <EntityType Name="IMAGEN_ARTE_ESTILO">
+    <Key>
+      <PropertyRef Name="IdImgArteEstilo" />
+    </Key>
+    <Property Name="IdImgArteEstilo" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="IdEstilo" Type="int" />
+    <Property Name="StatusArt" Type="int" />
+    <Property Name="extensionArt" Type="varchar" MaxLength="100" />
+    <Property Name="fecha" Type="date" />
+    <Property Name="Color" Type="varchar" MaxLength="50" />
+    <Property Name="IdSummary" Type="int" />
+  </EntityType>
+  <EntityType Name="IMAGEN_ARTE_PNL">
+    <Key>
+      <PropertyRef Name="IdImgArtePNL" />
+    </Key>
+    <Property Name="IdImgArtePNL" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="IdEstilo" Type="int" />
+    <Property Name="StatusPNL" Type="int" />
+    <Property Name="extensionPNL" Type="varchar" MaxLength="100" />
+    <Property Name="fecha" Type="date" />
+    <Property Name="IdSummary" Type="int" />
+  </EntityType>
+  <EntityType Name="UPC">
+    <Key>
+      <PropertyRef Name="IdUPC" />
+    </Key>
+    <Property Name="IdUPC" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="IdTalla" Type="int" />
+    <Property Name="IdSummary" Type="int" />
+    <Property Name="IdEstilo" Type="int" />
+    <Property Name="UPC" Type="bigint" />
+  </EntityType>
+  <Association Name="FK__ARTE__IdImgArte__056ECC6A">
+    <End Role="IMAGEN_ARTE" Type="Self.IMAGEN_ARTE" Multiplicity="0..1" />
+    <End Role="ARTE" Type="Self.ARTE" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="IMAGEN_ARTE">
+        <PropertyRef Name="IdImgArte" />
+      </Principal>
+      <Dependent Role="ARTE">
+        <PropertyRef Name="IdImgArte" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <EntityContainer Name="FortuneTestModelStoreContainer">
+    <EntitySet Name="ARTE" EntityType="Self.ARTE" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="IMAGEN_ARTE" EntityType="Self.IMAGEN_ARTE" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="IMAGEN_ARTE_ESTILO" EntityType="Self.IMAGEN_ARTE_ESTILO" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="IMAGEN_ARTE_PNL" EntityType="Self.IMAGEN_ARTE_PNL" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="UPC" EntityType="Self.UPC" Schema="dbo" store:Type="Tables" />
+    <AssociationSet Name="FK__ARTE__IdImgArte__056ECC6A" Association="Self.FK__ARTE__IdImgArte__056ECC6A">
+      <End Role="IMAGEN_ARTE" EntitySet="IMAGEN_ARTE" />
+      <End Role="ARTE" EntitySet="ARTE" />
+    </AssociationSet>
+  </EntityContainer>
+</Schema>

@@ -1,0 +1,549 @@
+﻿@{ ViewBag.Title = "PK"; Layout = "~/Views/Shared/_Layout.cshtml"; }
+<link href="~/Content/base_m.css" rel="stylesheet" />
+<script src="~/Content/Chart.js-master/moment.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+
+<script>
+    var cantidades_estilo_pedido;
+    //VALIDACIONES
+    $(document).on("input", ".numeric", function () {
+        this.value = this.value.replace(/\D/g, '');
+    });
+    $(document).on("click", "a", function () {
+        //setTimeout(function () { $("#loading").css('display', 'none'); }, 1000);
+        $("#loading").css('display', 'none');
+    });
+    $(document).on("input", ".validacion", function () {
+        var c = this.selectionStart,
+            r = /[^a-zA-Z0-9áéíóúÁÉÍÓÚ .()&!@@/#%-]/,
+            v = $(this).val();
+        if (r.test(v)) {
+            $(this).val(v.replace(r, ''));
+            c--;
+        }
+        this.setSelectionRange(c, c);
+    });
+    $(document).on("input", ".tallas", function () { $('.tallas').autocomplete({ source: '@Url.Action("Autocomplete_tallas")' }); });
+    $(document).on("input", ".dcs_usados", function () { $('.dcs_usados').autocomplete({ source: '@Url.Action("Autocomplete_dcs")' }); });
+    var rows_tabla_labels_fa, estilos_seleccionados_fa, tipo_packing_fa;
+    var rows_dc_fa, include_dc_fa, error_total_fa;
+    $(document).ready(function () {
+        error_total_fa = 0;
+        rows_dc_fa = 0; include_dc_fa = 0;
+        rows_tabla_labels_fa = 0;
+        estilos_seleccionados_fa = 0;
+        tipo_packing_fa = 0;
+        obtener_contenedores_fa();
+        
+        obtener_customers_pk_dir()
+        obtener_conductores_fa();
+        obtener_direcciones_pk_fa();
+        llenar_estilos_fantasy();
+        $('#caja_contenedor_pk_fa').select2();
+        $('#caja_conductor_pk_fa').select2();
+        $('#caja_customer_pk_fa').select2();
+
+        $('#check_ucclabels_fa').on('change', function () {
+            if (this.value != 0) {
+                agregar_row_label_fa();
+                $('.div_tabla_labels_fa').css('visibility', 'visible');
+            } else {
+                $('.div_tabla_labels_fa').css('visibility', 'hidden');
+            }
+        });
+    });
+
+    function llenar_estilos_fantasy() {
+        $.ajax({
+            url: '/Shipping/buscar_estilos_fantasy_select',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                var html = '';
+                $.each(result, function (key, item) {
+                    html += '<tr>';
+                    html += '<td style="visibility:hidden; border: none; width:5%;">' + item.id_estilo + '</td>';
+                    html += '<td style=" width:30%;">' + item.estilo + '</td>';
+                    html += '<td style=" width:35%;">' + item.descripcion + '</td>';
+                    html += '<td style=" width:30%;">' + item.color + '</td>';
+                    html += '</tr>';
+                });
+                //html += '</select>';
+                $(".rows_estilos_dir").html(html);
+            }
+        });
+    }
+
+
+    function obtener_customers_pk_dir() {
+         $.ajax({
+            url: '/Shipping/buscar_clientes_select',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                var html = ''; //'<label class="">PO&nbsp;</label> <select class="form-control js-example-basic-single" id="caja_pedido" >';
+                // += '<option  value="0">Select</option>';
+                $.each(result, function (key, item) {
+                    html += '<option  value="' + item.id_customer + '">' + item.customer + '</option>';
+                });
+                //html += '</select>';
+                $(".customer_fa").append(html);
+            }
+        });
+    }
+    function obtener_contenedores_fa() {
+        $("#loading_pk_fa").css('display', 'inline');
+        $.ajax({
+            url: '/Shipping/buscar_contenedores_select',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                //var html = '<label class="">Container&nbsp;</label> <select class="form-control pk ui search dropdown " id="caja_contenedor_pk" >';
+                var html = '';
+                // var html = '<select class="form-control " id="caja_contenedor_pk" >';
+                $.each(result, function (key, item) {
+                    html += '<option  value="' + item.id_container + '">' + item.eco + '</option>';
+                });
+               // html += '</select>';
+                $(".contenedores_fa").append(html);
+            }
+        });
+    }
+    function obtener_conductores_fa() {
+        $.ajax({
+            url: '/Shipping/buscar_conductores_select',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                //var html = '<label class="">Driver&nbsp;</label> <select class="form-control pk js-example-basic-single " id="caja_conductor_pk" >';
+                var html = '';
+                //var html = '<select class="form-control " id="caja_conductor_pk" >';
+                $.each(result, function (key, item) {
+                    html += '<option value="' + item.id_driver + '">' + item.driver_name + '</option>';
+                });
+                //html += '</select>';
+                $(".conductores_fa").append(html);
+            }
+        });
+    }
+    function obtener_direcciones_pk_fa() {
+        $.ajax({
+            url: '/Shipping/buscar_direcciones_select',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                var html = '<label class="">Address&nbsp;</label> <select class="form-control pk" id="caja_direccion_pk_fa" >';
+                //var html = '<select class="form-control " id="caja_direccion_pk" >';
+                $.each(result, function (key, item) {
+                    html += '<option  value="' + item.id_direccion + '">' + item.nombre + '</option>';
+                });
+                html += '</select>';
+                $("#div_shipto_fa").html(html);
+                $("#loading_pk_fa").css('display', 'none');
+            }
+        });
+    }
+
+    function agregar_row_label_fa() {
+        var html = '<tr>' +
+            '<td><input    maxlength="30" class="validacion form-control check_item_labels_fa pk_fa" id="" /></td>' +
+            '<td><button type="button" title="Delete row"  class="btn btn-light deleteRowLabel_fa"><b>-</b></button></td></tr>';
+        $('.rows_ucc_labels_fa').append(html);
+        rows_tabla_labels_fa++;
+    }
+    $(document).on("click", ".deleteRowLabel_fa", function () {
+        $(this).closest("tr").remove();
+        rows_tabla_labels_fa--;
+        if (rows_tabla_labels_fa <= 0) {
+            $('#check_ucclabels_fa').val('1').change();
+            $('.div_tabla_labels_fa').css('visibility', 'hidden');
+        } else {
+            $('.div_tabla_labels_fa').css('visibility', 'visible');
+        }
+
+    });
+   
+    var labels_fa;
+    function guardar_pk_fa(event) {
+        var error = 0; labels_fa = '';
+        if ($("#caja_pedido_pk_fa").val() == '' || $("#caja_pedido_pk_fa").val() == '0') {
+            $("#caja_pedido_pk_fa").css('border', '2px solid #e03f3f');
+            error++;
+        } else {
+            $("#caja_pedido_pk_fa").css('border', '1px solid #cccccc');
+        }
+        $(".check_item_labels_fa").each(function () {
+            if ($(this).val() == '') {
+                $(this).css('border', '2px solid #e03f3f');
+                error++;
+            } else {
+                $(this).css('border', '1px solid #cccccc');
+            }
+        });
+        if ($("#check_ucclabels_fa").val()!='0') {
+            $('#tabla_ucc_labels_fa tbody tr').each(function () {
+                labels_fa += "*" + $(this).find('td:eq(0) input').val();
+            });
+        } else {
+            labels_fa = 'N/A';
+        }
+        if (error == 0) {
+            $("#load_shipping_fa").css('display', 'inline');
+            enviar_datos_pk_fa();
+            //alert($("#caja_tipo_pk").val());
+            $("#load_shipping_fa").css('display', 'none');
+        } else {
+            $("#load_shipping_fa").css('display', 'none');
+            event.preventDefault();
+            alertify.alert('Error!', 'Check empty fields, please');
+            return false;
+        }
+    }
+    var columnas_dc_fa, rows_dc_fa = 0, columnas_estilos_dc_fa;
+    function redireccionarPagina_fa() { window.location = '/Shipping/Index'; }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////NUEVO JS PARA LOS NUEVOS PACKING LIST//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    var ppk_fa = 0, bp_fa = 0, ass_fa = 0;
+    var lista_estilo_fa;
+    var lista_assorts_fa;
+    var dcs_fa=0;
+    var dc_arr_fa = [], cabecera_dc_fa='';
+    var tallas_fa, idTallas_fa;
+    var columnas_dc_ppk_fa, columnas_dc_bp_fa, rows_dc_ppk_fa, rows_dc_bp_fa, estilos_seleccionados_fa;
+    function deshabilitar_campos_pk_fa() {
+        $(".pk_fa").each(function () { $(this).prop('disabled', true); });
+        $(".check_item_labels_fa").each(function () { $(this).prop('disabled', true); });
+    }
+    function enviar_datos_pk_fa() { //ENVIAR DATOS PACKING LIST- INFORMACIÓN GENERAL, NOS REGRESA LOS ESTILOS DE ESA ORDEN
+        $("#loading_pk_fa").css('display', 'inline');
+        var seal_fa, replacement_fa,pk=0;
+        if ($("#caja_seal_pk_fa").val() == '') { seal_fa = 'N/A'; } else { seal_fa = $("#caja_seal_pk_fa").val(); }
+        if ($("#caja_replacement_pk_fa").val() == '') { replacement_fa = 'N/A'; } else { replacement_fa = $("#caja_replacement_pk_fa").val(); }   
+        if ($("#caja_sin_pk").is(":checked")) { pk = 1; } 
+        $.ajax({
+            url: '/Shipping/guardar_pk_directo_fantasy',
+            //string                        customer,s                                      tring pedido,                                           string address, s                       tring driver,                                                string container,                    string seal,                string replacement,              string tipo,     string labels,                      string type_labels,                                     string num_envio,                     string tipo_packing
+            data: "{'customer':'" + $("#caja_customer_pk_fa").val() + "','pedido':'" + $("#caja_pedido_pk_fa").val() + "','address':'" + $("#caja_direccion_pk_fa").val() + "','driver':'" + $("#caja_conductor_pk_fa").val() + "','container':'" + $("#caja_contenedor_pk_fa").val() + "','seal':'" + seal_fa + "','replacement':'" + replacement_fa + "','tipo':'1','labels':'" + labels_fa + "','type_labels':'" + $("#check_ucclabels_fa").val() + "','num_envio':'" + $("#caja_num_envio_fa").val() + "','tipo_packing':'4','pk_id':'" + pk + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (jsonData) {
+                subir_archivo_breakdown();
+            }
+        });
+        //subir_archivo_breakdown();
+    }
+
+
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    function subir_archivo_breakdown() {
+        $("#loading_pk_fa").css('display', 'inline');
+        var archivo = $("#caja_archivo_bd").val();       
+            if (archivo.indexOf("xlsx") >= 0 || archivo.indexOf("xls") >= 0 || archivo.indexOf("xlsm") >= 0) {               
+                // Checking whether FormData is available in browser
+                if (window.FormData !== undefined) {
+                    var fileUpload = $("#caja_archivo_bd").get(0);
+                    var files = fileUpload.files;
+                    // Create FormData object
+                    var fileData = new FormData();
+                    // Looping over all files and add it to FormData object
+                    for (var i = 0; i < files.length; i++) { fileData.append(files[i].name, files[i]); }
+                    // Adding one more key to FormData object
+                    fileData.append('username', 'shipping');
+                    $.ajax({
+                        url: '/Shipping/UploadBreakdown',
+                        type: "POST",
+                        contentType: false, // Not to set any content header
+                        processData: false, // Not to process data
+                        data: fileData,
+                        success: function (jsonData) {
+                            redireccionarPagina_fa();
+                        },error: function (err) { alert(err.statusText); }
+                    });
+                } else {
+                    $("#loading_pk_fa").css('display', 'none');
+                    alertify.alert("FormData is not supported.");
+                }
+            } else {
+                $("#loading_pk_fa").css('display', 'none');
+                alertify.alert('Error!', 'File not supported, please select an excel file');
+            }
+       
+    }
+
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ /////////////////////////NUEVO JS PARA LOS NUEVOS PACKING LIST//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+</script>
+<style>
+    .dc_estilos {
+        -webkit-appearance: none !important;
+        border: none !important;
+        background: #337ab7 !important;
+        box-shadow: none !important;
+        color: white !important;
+    }
+
+    input[type=checkbox] {
+        /* Double-sized Checkboxes */
+        -ms-transform: scale(2); /* IE */
+        -moz-transform: scale(2); /* FF */
+        -webkit-transform: scale(2); /* Safari and Chrome */
+        -o-transform: scale(2); /* Opera */
+        padding: 10px;
+    }
+
+    /* Might want to wrap a span around your checkbox text */
+    .checkboxtext {
+        /* Checkbox text */
+        font-size: 110%;
+        display: inline;
+    }
+
+    .no_caja {
+        background: none !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    .load_pk {
+        position: fixed;
+        z-index: 2001 !important;
+        height: 100%;
+        display: none;
+        border: 0;
+        padding: .5em 1em;
+        overflow: auto;
+        top: 0%;
+        left: 0%;
+        background: white;
+        width: 100%;
+        border: none;
+        opacity: 0.8;
+    }
+
+    .imagen_loading2 {
+        position: absolute;
+        z-index: 2000 !important;
+        top: 35%;
+        left: 43%;
+        width: 300px;
+        height: 300px;
+        background: url('../../Content/img/gif/loader3.gif');
+    }
+
+    tr {
+        cursor: pointer;
+    }
+
+    .counter_lr {
+        padding: 8px;
+        color: #ccc;
+    }
+
+    .agregar {
+        border-radius: 20px !important;
+        background: #3479bf !important;
+        border: solid 1px white !important;
+    }
+
+        .agregar:hover {
+            border-radius: 20px !important;
+            background: white !important;
+            border: solid 1px #3479bf !important;
+            color: #3479bf !important;
+        }
+
+    .lectura {
+        border: none !important;
+        background: none !important;
+        box-shadow: none !important;
+    }
+
+    .modal-dialog {
+        width: 75% !important;
+        padding: 2em;
+        height: 90% !important;
+        min-height: 90% !important;
+    }
+
+    .modal-content {
+        height: 90% !important;
+    }
+
+    .modal-lg {
+        max-width: 80% !important;
+    }
+
+    .panel_cajas {
+        float: left;
+        border: solid 1px #3479bf;
+        border-radius: 5px;
+        padding: .5em;
+        margin: 1em;
+    }
+
+    .modal-header-primary {
+        color: #fff;
+        padding: 9px 15px;
+        border-bottom: 1px solid #eee;
+        background-color: #3479bf;
+        -webkit-border-top-left-radius: 5px;
+        -webkit-border-top-right-radius: 5px;
+        -moz-border-radius-topleft: 5px;
+        -moz-border-radius-topright: 5px;
+        border-top-left-radius: 5px;
+        border-top-right-radius: 5px;
+    }
+
+    .x {
+        transition: transform .25s ease-in-out;
+        color: white !important;
+    }
+
+        .x:hover {
+            transform: rotate(180deg);
+            color: white !important;
+        }
+
+        .x:before {
+            transform: rotate(45deg);
+            transform-origin: center;
+        }
+
+        .x:after {
+            transform: rotate(-45deg);
+            transform-origin: center;
+        }
+</style>
+</div>
+<input type="hidden" id="caja_number_po_fa">
+
+<div id="loading_pk_fa" class="load_pk">
+    <div id="spinner" class="imagen_loading2" style=""></div>
+</div>
+
+<div class="container-fluid" style="padding-left:4em; padding-right:3em;">
+    <center><h2>New PK</h2></center>
+    <!------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------->
+    <div class="row" style="margin-left: 3em;">
+        <div class="form-group ">
+            <div class="form-group col-sm-3 " id="div_customer_dir" style="padding: 0;">
+                <label for="caja_by_trans" class=" col-form-label">Customer&nbsp;</label><br />
+                <select class="form-control js-example-basic-single customer_fa pk" id="caja_customer_pk_fa"></select>
+            </div>
+            <div class="form-group col-sm-3 " id="div_customer_fa">
+                <label for="caja_by_trans" class=" col-form-label">Order&nbsp;</label><br />
+                <input class="form-control js-example-basic-single pedidos_fa pk_fa" id="caja_pedido_pk_fa" />
+            </div>
+            <div class="form-group col-sm-3 " id="div_shipto_fa"></div>
+            <div class="form-group col-sm-3 " id="div_driver_fa">
+                <label for="caja_by_trans" class=" col-form-label">Driver&nbsp;</label><br />
+                <select class="form-control js-example-basic-single conductores_fa pk_fa" id="caja_conductor_pk_fa"></select>
+            </div>
+            
+        </div>
+    </div>
+    <div class="row" style="margin-left: 3em;">
+        <div class="form-group ">
+            <div class="form-group col-sm-3 " id="div_container_fa" style="padding: 0;">
+                <label for="caja_by_trans" class=" col-form-label">Container&nbsp;</label><br />
+                <select class="form-control js-example-basic-single contenedores_fa pk_fa" id="caja_contenedor_pk_fa"></select>
+            </div>
+            <div class="form-group col-sm-3 ">
+                <label for="caja_by_trans" class=" col-form-label pk">Seal </label>
+                <input type="text" class="form-control numeric pk_fa"   maxlength="10" id="caja_seal_pk_fa">
+            </div>
+            <div class="form-group col-sm-3 ">
+                <label for="caja_by_trans" class=" col-form-label pk ">Replacement</label>
+                <input type="text" class="form-control validacion pk_fa"   maxlength="50" id="caja_replacement_pk_fa">
+            </div>
+            
+            <div class="form-group col-sm-3" style="padding-left:0px;">
+                <label for="caja_num_envio" class=" col-form-label pk">Ship #</label>
+                <select class="form-control  pk_fa" id="caja_num_envio_fa">
+                    <option>1</option>
+                    <option>2</option>
+                    <option>3</option>
+                    <option>4</option>
+                    <option>5</option>
+                    <option>6</option>
+                    <option>7</option>
+                    <option>8</option>
+                    <option>9</option>
+                    <option>10</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="row" style="margin:0px 0px 0px 4em; padding:0px;">
+        <div class="form-group">
+            <div class="form-group col-sm-3 ">
+                <label for="caja_by_trans" class=" col-form-label">Upload breakdown</label><br />
+                <input type="file" class="custom-file-input" id="caja_archivo_bd" style="float:left; margin-right:1em; " />
+            </div>
+            <div class="form-group col-sm-3 " style="">
+                <label class="custom-control-label" for="check_ucclabels">Labels/TPM</label>
+                <select class="form-control  pk" id="check_ucclabels_fa">
+                    <option value="0">None</option>
+                    <option value="1">UCC Label's</option>
+                    <option value="2">TPM</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-3 ">
+                <div class="div_tabla_labels_fa" style="visibility:hidden;">
+                    <table id="tabla_ucc_labels_fa" class="fold-table table table-striped table-hover ">
+                        <thead style=""><tr><th>Label</th><th><button type="button"  title="Add row" class="btn btn-sm btn-success " onclick="agregar_row_label_fa()"><b>+</b></button></th></tr></thead>
+                        <tbody class="rows_ucc_labels_fa"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="form-group col-sm-3 " style="">
+                <input type="checkbox" id="caja_sin_pk" />
+                <span class="checkboxtext">
+                    &nbsp;&nbsp;No PK
+                </span>
+                <br />
+                <button type="button" title="Save" class="btn btn-primary  mb-2" id="boton_guardar_pk_fa" onclick="guardar_pk_fa(event);" style=" ">Save</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row" id="div_estilos" style="">
+        <center><h4>Styles</h4></center>
+        <table id="" class="fold-table table table-striped table-hover " style="margin-top:0px;">
+            <thead style="background:#3479bf; color:white;">
+                <tr>
+                    <th style="visibility:hidden;  border:none; width:5%;"></th>
+                    <th style=" width:30%;">Style</th>
+                    <th style=" width:35%;">Description</th>
+                    <th style=" width:30%;">Color</th>
+                </tr>
+            </thead>
+        </table>
+        <div style="overflow:auto; height:250px;">
+            <table id="tabla_estilos_dir" class="fold-table table table-striped table-hover " style="margin:0px;">
+                <tbody class="rows_estilos_dir"></tbody>
+            </table>
+        </div>
+    </div>
+
+
+    <!------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------->
+    <br />
+    <a type="button"  title="Return"  class="btn btn-secondary btn-sm " id="boton_regresar_inventario_fa" href="@Url.Action("Index", "Shipping")" style="float:left; "><span class="glyphicon glyphicon-backward" aria-hidden="true"></span> Back</a>
+</div>
+
+
+<!--<th style="visibility:hidden; width:1px;"></th>
+-->

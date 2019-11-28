@@ -1,0 +1,179 @@
+﻿@model IEnumerable<FortuneSystem.Models.Pedidos.OrdenesCompra>
+
+@{
+    ViewBag.Title = "WIP";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+</div>
+<div class="container-fluid" style="margin-left:10em; margin-right:5em; ">
+    <div class="panel panel-primary" id="listaWIP">
+        <div class="panel-heading">
+            <h2>WIP</h2>
+        </div>
+        <br />
+        <div id="botones"></div>
+        <br />
+        <div class="container-fluid">
+            <div class="form-row">
+                <div class="form-group col-md-5">
+                    @Html.Label("Year:", htmlAttributes: new { @class = "control-label" }) 
+                    @Html.DropDownList("ListadoPeriodo",new SelectList( new List<Object>{                      
+                       new { value = 1 , text = "2019" },
+                       new { value = 2 , text = "2018"},
+                       new { value = 0 , text = "All"  }
+                    }, "value", "text", 1))
+                </div>
+            </div>
+
+        </div>
+        
+        <div id="div_tabla_WIP" style="width: 100%; height:900px; overflow:auto; ">
+            <table align="center" class="table table-striped" id="tablaWip">
+                <thead>
+                    <tr>
+                        <th>
+                            @Html.DisplayName("CUSTOMER")
+                        </th>
+                        <th>
+                            @Html.DisplayName("RETAILER")
+                        </th>
+                        <th>
+                            @Html.DisplayName("PO RECVD DATE")
+                        </th>
+                        <th>
+                            @Html.DisplayName("PO NO")
+                        </th>
+                        <!--brand name-->
+                        <th>
+                            @Html.DisplayName("BRAND NAME")
+                        </th>
+                        <th>
+                            @Html.DisplayName("AMT PO")
+                        </th>
+                        <!--reg/bulk-->
+                        <th>
+                            @Html.DisplayName("REG/BULK")
+                        </th>
+                        <th>
+                            @Html.DisplayName("BALANCE QTY")
+                        </th>
+                        <th>
+                            @Html.DisplayName("EXPECTED SHIP DATE")
+                        </th>
+                        <th>
+                            @Html.DisplayName("ORIGINAL CUST DUE DATE")
+                        </th>
+                        <th>
+                            @Html.DisplayName("DESIGN NAME")
+                        </th>
+                        <th>
+                            @Html.DisplayName("STYLE")
+                        </th>
+                        <th>
+                            @Html.DisplayName("MILL PO")
+                        </th>
+                        <th>
+                            @Html.DisplayName("COLOR")
+                        </th>
+                        <th>
+                            @Html.DisplayName("GENDER")
+                        </th>
+                        <th>
+                            @Html.DisplayName("BLANKS RECEIVED")
+                        </th>
+                        <th>
+                            @Html.DisplayName("PARTIAL/COMPLETE BLANKS")
+                        </th>
+                        <th>
+                            @Html.DisplayName("ART RECEIVED")
+                        </th>
+                        <th>
+                            @Html.DisplayName("TRIIM RECEIVED")
+                        </th>
+                        <th>
+                            @Html.DisplayName("PACK INST. RCVD")
+                        </th>
+                        <th>
+                            @Html.DisplayName("PRICE TICKET RECEIVED")
+                        </th>
+                        <th>
+                            @Html.DisplayName("UCC RECEIVED")
+                        </th>
+                        <th>
+                            @Html.DisplayName("COMMENTS UPDATE")
+                        </th>
+                        <th>ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.CatCliente.Nombre)
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.CatClienteFinal.NombreCliente)
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.FechaOrden)
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.PO)
+                            </td>
+                            <!--brand name-->
+                            <td></td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.VPO)
+                            </td>
+                            <!--reg/bulk-->
+                            <td>
+                                @Html.DisplayFor(modelItem => item.CatTipoOrden.TipoOrden)
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.POSummary.Cantidad)
+                            </td>
+                            <!--EXPECTED SHIP DATE-->
+                            <td></td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.FechaCancel)
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.POSummary.ItemDescripcion.Descripcion)
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.POSummary.ItemDescripcion.ItemEstilo)
+                            </td>
+                            <!--MILL  P.O.-->
+                            <td></td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.POSummary.CatColores.DescripcionColor)
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.POSummary.CatGenero.Genero)
+                            </td>
+                            <!--BLANKS RECEIVED  -->
+                            <td></td>
+                            <!--PARTIAL / COMPLETE BLANKS .-->
+                            <td></td>
+                            <!--ART RECEIVED      -->
+                            <td></td>
+                            <!--TRIIM RECEIVED -->
+                            <td></td>
+                            <!--PACK INST. RCVD-->
+                            <td></td>
+                            <!--PRICE TICKET RECEIVED -->
+                            <td></td>
+                            <!--UCC RECEIVED -->
+                            <td></td>
+                            <!--COMMENTS UPDATE -->
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

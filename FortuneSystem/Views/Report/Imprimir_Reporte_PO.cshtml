@@ -1,0 +1,336 @@
+﻿@model IEnumerable<FortuneSystem.Models.POSummary.POSummary>
+@{ Layout = null; }
+
+@Styles.Render("~/bundles/css")
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="@Server.MapPath("~/Content/bootstrap-theme.css")" rel="stylesheet" />
+    <link href="@Server.MapPath("~/Content/bootstrap.min.css")" rel="stylesheet" />    
+    <style type="text/css">
+        body {
+            font-family: sans-serif;
+        }
+
+        .under_line {
+            border-bottom: 1px solid black;
+            text-align: center;
+            padding-left: 1em;
+            padding-right: 1em;
+        }
+
+        .texto_t {
+            color: black;
+            font-weight: bold;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .texto_cabecera_derecha {
+            font-weight: bold;
+            text-align: right;
+        }
+
+        .texto {
+            font-size: 10px;
+        }
+
+        .table_tallas {
+            border-collapse: collapse;
+            font-size: 9px;
+        }
+
+            .table_tallas td {
+                border: 1px solid black;
+                text-align: center;
+            }
+
+        .texto_izquiera {
+            text-align: left !important;
+        }
+
+        table.table-bordered {
+            border: 1px solid #cfcaca;
+            margin-top: 20px;
+        }
+
+            table.table-bordered > thead > tr > th {
+                border: 0px solid #cfcaca;
+            }
+
+            table.table-bordered > tbody > tr > td {
+                border: 1px solid #0c0c0c;
+            }
+
+            table.table-bordered > tbody > tr > th {
+                border: 1px solid #0c0c0c;
+            }
+
+        #tablaRepEstilo {
+            border: 1px solid #cfcaca;
+        }
+
+            #tablaRepEstilo > thead > tr > th {
+                border: 0px solid #cfcaca;
+            }
+
+            #tablaRepEstilo > tbody > tr > td {
+                border: 1px solid #0c0c0c;
+                width: 140px;
+            }
+
+            #tablaRepEstilo > tbody > tr > th {
+                border: 1px solid #0c0c0c;
+                width: 140px;
+            }
+
+        #tablaDatEstilo {
+            border: 1px solid #cfcaca;
+        }
+
+            #tablaDatEstilo > thead > tr > th {
+                border: 0px solid #cfcaca;
+            }
+
+            #tablaDatEstilo > tbody > tr > td {
+                border: 1px solid #0c0c0c;
+                width: 160px;
+            }
+
+            #tablaDatEstilo > tbody > tr > th {
+                border: 1px solid #0c0c0c;
+                width: 160px;
+            }
+
+        #tablaSize > tbody > tr > th {
+            border: 1px solid #0c0c0c;
+            width: 80px;
+            height: 30px;
+        }
+
+        #tablaSize > tbody > tr > td {
+            border: 1px solid #0c0c0c;
+            width: 80px;
+            height: 30px;
+        }
+
+        .cabecera_inventario {
+            color: black;
+            background: #cfcaca;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .cabecera_size {
+            color: black;
+            background: #cfcaca;
+            text-align: center;
+            font-size: 15px;
+        }
+
+        .encabezado {
+            text-align: center;
+        }
+
+        .esp {
+            color: darkred;
+            font-size: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    @{ //VARIABLES
+        int cantQty = 0, cantExtra = 0, totalPcs = 0, numCTN = 0, totalQty=0, extrasQty=0;
+
+    }
+
+    @foreach (var item in Model)
+    {
+        cantQty = 0;
+		cantExtra = 0;
+		totalQty = 0;
+		extrasQty=0;
+
+        <div class="row" style="margin-top:40px;">
+
+            <div class="col-md-1" style=" float:left; width: 800px; height: 40px; border: 0px solid #0c0c0c;">
+                @*Informacion de datos para encabezado *@
+                <div style=" float:left; width: 100px; height: 20px;">
+                    @foreach (var item_Tallas in item.ListarTallasPorEstilo)
+                    {
+
+                        totalPcs = item.Cantidad;
+                    }
+
+                    <p style=" height: 20px; font-size:28px; text-align: center; font-family:Arial, Helvetica, sans-serif; font-weight:bold;  color: black;">&nbsp;&nbsp;@totalPcs.ToString("###,###,##0") </p>
+                </div>
+                <div style="width:450px; float:left;  ">
+                    <p style=" height: 20px; font-size:28px; text-align:center; font-family:Arial, Helvetica, sans-serif; font-weight:bold;  color: black;">@Html.DisplayFor(modelItem => item.Pedidos.PO)</p>
+                </div>
+                <div style="width:200px; float:left;">
+                    <p style=" height: 20px; font-size:28px; text-align: center;  font-family:Arial, Helvetica, sans-serif; font-weight:bold;  color: black;">  @Convert.ToDateTime(item.Pedidos.FechaFinalOrden).ToString("dd-MMM")</p>
+                </div>
+            </div>
+            <div class="col-md-1" style=" float:left; width: 720px; height: 250px; border: 0px solid darkred; ">
+                @*Tabla de informacion del estilo*@
+                <table class="" id="tablaRepEstilo" style="padding: 20px; margin: 5px auto;">
+                    <thead class="cabecera_inventario">
+                        <tr>
+                            <th class="encabezado">
+                                ITEM #
+                            </th>
+                            <th class="encabezado">
+                                ITEM DESCRIPTION
+                            </th>
+                            <th class="encabezado">
+                                @Html.DisplayNameFor(model => model.CatColores.CodigoColor)
+                            </th>
+                            <th class="encabezado">
+                                COLOR DESCRIPTION
+                            </th>
+                            <th class="encabezado">
+                                @Html.DisplayNameFor(model => model.Cantidad)
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="texto_t">
+                                @Html.DisplayFor(modelItem => item.EstiloItem)
+                            </td>
+                            <td class="texto_t">
+                                @Html.DisplayFor(modelItem => item.ItemDescripcion.Descripcion)
+                            </td>
+                            <td class="texto_t">
+                                @Html.DisplayFor(modelItem => item.CatColores.CodigoColor)
+                            </td>
+                            <td class="texto_t">
+                                @Html.DisplayFor(modelItem => item.CatColores.DescripcionColor)
+                            </td>
+                            <td class="texto_t">
+                                @Html.DisplayFor(modelItem => item.Cantidad)
+                                @{totalQty = @item.Cantidad;
+                                }
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="col-md-1" style=" float:left; width: 540px; height: 170px; border: 0px solid #0c0c0c; ">
+                    @*Tabla de informacion de datos del estilo
+            <table class="" id="tablaDatEstilo" style=" border: 0px solid #0c0c0c;">
+                <thead class="cabecera_inventario">
+                    <tr>
+                        <th class="encabezado">
+                            FABRIC TYPE
+                        </th>
+                        <th class="encabezado">
+                            FIBER
+                        </th>
+                        <th class="encabezado">
+                            YARN SIZE
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="texto_t">
+                            @Html.DisplayFor(modelItem => item.CatTela.Tela)
+                        </td>
+                        <td class="texto_t">
+                            -
+                        </td>
+                        <td class="texto_t">
+                            -
+                        </td>
+                    </tr>
+                </tbody>
+            </table>*@
+                    @*Descripcion de especialidad*@
+                    <div class="esp"> @Html.DisplayFor(modelItem => item.CatEspecialidades.Especialidad)</div>
+                    @*Tabla de lista de tallas*@
+                    <table class="" id="tablaSize" style=" border: 0px solid #0c0c0c;">
+                        <thead>  </thead>
+                        <tbody>
+                            <tr>
+                                <th class="cabecera_size" style="text-align:right; ">SIZE:</th>
+
+                                @foreach (var item_Tallas in item.ListarTallasPorEstilo)
+                                {
+                                    <th class="cabecera_size">@item_Tallas.Talla </th>
+                                }
+
+                                <th class="cabecera_size"> TOTAL </th>
+                            </tr>
+                            <tr>
+                                <th class="cabecera_size" style="text-align:right; width:100px;">QUANTITY:</th>
+
+                                @foreach (var item_Tallas in item.ListarTallasPorEstilo)
+                                {
+                                    <th class="texto_t">@item_Tallas.Cantidad </th>
+                                    cantQty += @item_Tallas.Cantidad;
+                                    extrasQty += @item_Tallas.Extras;
+                                }
+
+                                @if (cantQty == totalQty)
+                                {
+
+                                    <td class="texto_t">@cantQty</td>
+                                }
+                                else
+                                {
+                                    cantQty = cantQty + extrasQty;
+                                    <td class="texto_t">@cantQty</td>
+                                }
+                            </tr>
+                            <tr>
+                                <th class="cabecera_size" style="text-align:right; width:100px;">EXTRAS/DAÑADAS:</th>
+
+                                @foreach (var item_Tallas in item.ListarTallasPorEstilo)
+                                {
+                                    <th class="texto_t">@item_Tallas.Extras </th>
+                                    cantExtra += @item_Tallas.Extras;
+                                }
+
+                                <td class="texto_t">@cantExtra</td>
+                            </tr>
+                            <tr>
+                                <th class="cabecera_size" style="text-align:right; width:100px;">QTY/CTN:</th>
+
+                                @foreach (var item_Tallas in item.ListarTallasPorEstilo)
+                                {
+                                    <th class="texto_t">0 </th>
+                                    numCTN += 0;
+                                }
+
+                                <td class="texto_t">@numCTN</td>
+                            </tr>
+                            @*<tr>
+                        <th class="cabecera_inventario" width="190px;" style="text-align:right">UPC:</th>
+
+                        @foreach (var item_Tallas in item.ListarTallasPorEstilo)
+                        {
+                            <th class="texto_t">0 </th>
+                            numUPC += 0;
+                        }
+
+                        <td class="texto_t">@numUPC</td>
+                    </tr>*@
+                        </tbody>
+                    </table>
+                </div>
+                <div>
+                  @{ 
+                         var imagePath = "C:/imagenesArte/" + @item.nombreArte;
+                  }
+                    <img src="@imagePath" alt=" " style="width:130px;height:150px; float:left;" />
+                </div>
+               
+            </div>
+        </div>
+
+
+    }
+</body>
+</html>

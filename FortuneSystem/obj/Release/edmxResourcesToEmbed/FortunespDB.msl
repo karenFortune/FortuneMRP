@@ -1,0 +1,66 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
+  <EntityContainerMapping StorageEntityContainer="FortuneTestModelStoreContainer" CdmEntityContainer="Fortune">
+    <EntitySetMapping Name="ARTEs">
+      <EntityTypeMapping TypeName="FortuneTestModel.ARTE">
+        <MappingFragment StoreEntitySet="ARTE">
+          <ScalarProperty Name="IdArte" ColumnName="IdArte" />
+          <ScalarProperty Name="IdImgArte" ColumnName="IdImgArte" />
+          <ScalarProperty Name="IdSummary" ColumnName="IdSummary" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="IMAGEN_ARTE">
+      <EntityTypeMapping TypeName="FortuneTestModel.IMAGEN_ARTE">
+        <MappingFragment StoreEntitySet="IMAGEN_ARTE">
+          <ScalarProperty Name="idUsuario" ColumnName="idUsuario" />
+          <ScalarProperty Name="comentarios" ColumnName="comentarios" />
+          <ScalarProperty Name="combos" ColumnName="combos" />
+          <ScalarProperty Name="fecha" ColumnName="fecha" />
+          <ScalarProperty Name="extensionPNL" ColumnName="extensionPNL" />
+          <ScalarProperty Name="extensionArte" ColumnName="extensionArte" />
+          <ScalarProperty Name="IdImgArte" ColumnName="IdImgArte" />
+          <ScalarProperty Name="IdEstilo" ColumnName="IdEstilo" />
+          <ScalarProperty Name="StatusArte" ColumnName="StatusArte" />
+          <ScalarProperty Name="StatusPNL" ColumnName="StatusPNL" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="UPCs">
+      <EntityTypeMapping TypeName="FortuneTestModel.UPC">
+        <MappingFragment StoreEntitySet="UPC">
+          <ScalarProperty Name="IdEstilo" ColumnName="IdEstilo" />
+          <ScalarProperty Name="IdUPC" ColumnName="IdUPC" />
+          <ScalarProperty Name="IdTalla" ColumnName="IdTalla" />
+          <ScalarProperty Name="IdSummary" ColumnName="IdSummary" />
+          <ScalarProperty Name="UPC1" ColumnName="UPC" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="IMAGEN_ARTE_PNL">
+      <EntityTypeMapping TypeName="FortuneTestModel.IMAGEN_ARTE_PNL">
+        <MappingFragment StoreEntitySet="IMAGEN_ARTE_PNL">
+          <ScalarProperty Name="IdSummary" ColumnName="IdSummary" />
+          <ScalarProperty Name="fecha" ColumnName="fecha" />
+          <ScalarProperty Name="extensionPNL" ColumnName="extensionPNL" />
+          <ScalarProperty Name="StatusPNL" ColumnName="StatusPNL" />
+          <ScalarProperty Name="IdEstilo" ColumnName="IdEstilo" />
+          <ScalarProperty Name="IdImgArtePNL" ColumnName="IdImgArtePNL" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="IMAGEN_ARTE_ESTILO">
+      <EntityTypeMapping TypeName="FortuneTestModel.IMAGEN_ARTE_ESTILO">
+        <MappingFragment StoreEntitySet="IMAGEN_ARTE_ESTILO">
+          <ScalarProperty Name="IdSummary" ColumnName="IdSummary" />
+          <ScalarProperty Name="Color" ColumnName="Color" />
+          <ScalarProperty Name="fecha" ColumnName="fecha" />
+          <ScalarProperty Name="extensionArt" ColumnName="extensionArt" />
+          <ScalarProperty Name="StatusArt" ColumnName="StatusArt" />
+          <ScalarProperty Name="IdEstilo" ColumnName="IdEstilo" />
+          <ScalarProperty Name="IdImgArteEstilo" ColumnName="IdImgArteEstilo" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+  </EntityContainerMapping>
+</Mapping>

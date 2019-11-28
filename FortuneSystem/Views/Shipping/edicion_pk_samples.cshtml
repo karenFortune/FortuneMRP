@@ -1,0 +1,1290 @@
+﻿@{ ViewBag.Title = "PK"; Layout = "~/Views/Shared/_Layout.cshtml"; }
+<link href="~/Content/base_m.css" rel="stylesheet" />
+<script src="~/Content/Chart.js-master/moment.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+
+<script>
+    var cantidades_estilo_pedido,estilos_nuevos_e,contador_estilos_nuevos_e;
+    //VALIDACIONES
+     var active = 0;
+    $(document).on("input", ".numeric", function () {
+        this.value = this.value.replace(/\D/g, '');
+    });
+    $(document).on("click", "a", function () {
+        //setTimeout(function () { $("#loading").css('display', 'none'); }, 1000);
+        $("#loading").css('display', 'none');
+    });
+    $(document).on("input", ".validacion", function () {
+        var c = this.selectionStart,
+            r = /[^a-zA-Z0-9áéíóúÁÉÍÓÚ .()&!@@/#%-]/,
+            v = $(this).val();
+        if (r.test(v)) {
+            $(this).val(v.replace(r, ''));
+            c--;
+        }
+        this.setSelectionRange(c, c);
+    });
+    $(document).on("input", ".tallas", function () { $('.tallas').autocomplete({ source: '@Url.Action("Autocomplete_tallas")' }); });
+     //MOVERSE ENTRE LOS INPUT DE LA TABLA CON LAS FLECHAS DEL TECLADO
+    //MOVERSE ENTRE LOS INPUT DE LA TABLA CON LAS FLECHAS DEL TECLADO    
+    rePosition();
+    $(document).keydown(function(e) {
+        var inp = String.fromCharCode(e.keyCode);
+        if ((!(/[a-zA-Z0-9-_ ]/.test(inp) || e.keyCode == 96)) && e.keyCode != 8){
+          reCalculate(e);
+          rePosition();
+          // if key is an arrow key, don't type the user input.
+          // if it is any other key (a, b, c, etc)
+          // edit the text
+          if (e.keyCode > 36 && e.keyCode < 41) {
+            return false;
+          }
+        }
+    });
+    $('td').click(function() {
+        active = $(this).closest('table tbody').find('td').index(this);
+        rePosition();
+    });
+    function reCalculate(e) {
+        var rows = $('.tblnavigate tbody tr').length;
+        var columns = $('.tblnavigate tbody tr:eq(0) td').length;
+        var temp;
+
+        if (e.keyCode == 37) { //move left or wrap
+            temp = active;
+            while (temp > 0) {
+                temp = temp - 1;
+                // only advance if there is an input field in the td
+                if ($('.tblnavigate tbody tr td').eq(temp).find('input').length != 0) {
+                    active = temp;
+                    break;
+                }
+            }
+        }
+        if (e.keyCode == 38) { // move up
+            temp = active;
+            while (temp - columns >= 0) {
+                temp = temp - columns;
+                // only advance if there is an input field in the td
+                if ($('.tblnavigate tbody tr td').eq(temp).find('input').length != 0) {
+                    active = temp;
+                    break;
+                }
+            }
+        }
+        if (e.keyCode == 39) { // move right or wrap
+            temp = active;
+            while (temp < (columns * rows) - 1) {
+                temp = temp + 1;
+                // only advance if there is an input field in the td
+                if ($('.tblnavigate tbody tr td').eq(temp).find('input').length != 0) {
+                    active = temp;
+                    break;
+                }
+            }
+        }
+        if (e.keyCode == 40) { // move down
+            temp = active;
+            while (temp + columns <= (rows * columns) - 1) {
+                temp = temp + columns;
+                // only advance if there is an input field in the td
+                if ($('.tblnavigate tbody tr td').eq(temp).find('input').length != 0) {
+                    active = temp;
+                    break;
+                }
+            }
+        }
+    }
+    function rePosition() {
+        console.log(active);
+        $('.active').removeClass('active');
+        $('.tblnavigate tbody tr td').eq(active).addClass('active');
+        $('.tblnavigate tbody tr td').find('input').removeClass('textClass');
+        $('.tblnavigate tbody tr td').eq(active).find('input').addClass('textClass');
+        $('.tblnavigate tbody tr td').eq(active).find('input').select();
+        var input = $('.tblnavigate tbody tr td').eq(active).find('input').focus();
+        scrollInView();
+    }
+    function scrollInView() {
+        var target = $('.tblnavigate tbody tr td:eq(' + active + ')');
+        if (target.length) {
+            var top = target.offset().top;
+
+            $('html,body').stop().animate({
+                scrollTop: top - 100
+            }, 400);
+            return false;
+        }
+    }
+    //MOVERSE ENTRE LOS INPUT DE LA TABLA CON LAS FLECHAS DEL TECLADO
+    //MOVERSE ENTRE LOS INPUT DE LA TABLA CON LAS FLECHAS DEL TECLADO
+    //--------------------------------------------------------------------------------------------------------------------------------------------
+    var rows_tabla_labels_sa_ed, estilos_seleccionados_sa_ed, tipo_packing_sa_ed;
+    var rows_dc_sa_ed, include_dc_sa_ed, error_total_sa_ed,indice_sa_ed;
+    $(document).ready(function () {
+        error_total_sa_ed = 0;
+        include_dc_sa_ed = 0; 
+        indice_sa_ed = 0;
+        estilos_nuevos_e = 0;
+        contador_estilos_nuevos_e = 0;
+        estilos_seleccionados_sa_ed = 0;        
+        obtener_contenedores_sa_ed();
+        llenar_po_sa_ed();
+
+        columnas_extras = 0;
+        contador_cols_extras = 0;
+
+        obtener_conductores_sa_ed();
+        obtener_direcciones_pk_sa_ed();
+        $('.js-example-basic-single').select2();
+        $('#caja_contenedor_pk_sa_ed').select2();
+        $('#caja_conductor_pk_sa_ed').select2();  
+        setTimeout(function(){ obtener_rows_samples_ed(); }, 3000);
+    });
+    var packing, samples_packing;
+    var indices_lista;
+    function obtener_rows_samples_ed() {
+        $("#loading_pk_sa_ed").css('display', 'inline');
+        $.ajax({
+            url: '/Shipping/buscar_informacion_packing_samples',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (jsonData) {
+                packing = jsonData.Data.packing;
+                samples_packing = jsonData.Data.samples_packing;
+                indices_lista = jsonData.Data.indices_pk;
+
+                $.each(packing, function (key, pk) {
+                    tipo_packing_list = pk.id_packing_type;
+                    $("#caja_packing_sa_ed").val(pk.id_packing_list);
+                    $("#caja_customer_sa_ed").val(pk.id_customer);
+                    $("#caja_direccion_pk_sa_ed").val(pk.id_direccion_envio);
+                    $("#caja_conductor_pk_sa_ed").val(pk.id_driver);
+                    $("#caja_contenedor_pk_sa_ed").val(pk.id_container);
+                    $("#caja_seal_pk_sa_ed").val(pk.seal);
+                    $("#caja_replacement_pk_sa_ed").val(pk.replacement);
+                    $("#caja_num_envio_sa_ed").val(pk.num_envio);
+
+                    $('#caja_conductor_pk_sa_ed option').each(function (i, e) {
+                        if (this.value == pk.id_driver) {
+                            $(this).attr('selected', 'selected');
+                            $(this).val(pk.id_driver).change();
+                        }
+                    });
+                    $('#caja_contenedor_pk_sa_ed option').each(function (i, e) {
+                        if (this.value == pk.id_container) {
+                            $(this).attr('selected', 'selected');
+                            $(this).val(pk.id_container).change();
+                        }
+                    });
+                });
+                ////////////////////////////////////////////////////////////////////////////////////////////////
+                ////////////////////////////////////////////////////////////////////////////////////////////////
+                  var contador_extras = 0;
+                  var cabeceras_tallas_temp;
+                  $.each(samples_packing, function (key, s) {
+                      while (contador_extras == 0) {
+                          cabeceras_tallas_temp = s.cabeceras;
+                          $.each(s.cols_extras, function (key, x) {
+                              arr_col_extras.push(x);
+                              contador_cols_extras = x;//nunca disminuye
+                              columnas_extras++;//disminuye
+                          });
+                          contador_extras++;
+                      }
+                  });
+                contador_extras = 1;
+                debugger
+                  $.each(arr_col_extras, function (key, x) {
+                       var temp = 0;
+                      $('#tabla_temporal_sa_ed thead tr').each(function () {
+                          if (temp == 0) {
+                              $(this).find('th').eq(cols_inicio + cols_tallas_obligatorias + contador_extras - 2).after('<th class="colx' + x + '" onclick="delcol(' + x + ')" ><b>X</b></th>');
+                          } else {
+                               $(this).find('th').eq(cols_inicio + cols_tallas_obligatorias + contador_extras - 2).after('<th class="colx'+x+'"  ></th>');
+                          }
+                          temp++;
+                      });
+                      contador_extras++;
+
+                  });
+                //var cabeceras_tabla = cabeceras_tallas_temp.split('*');
+                var datos_cabecera = cabeceras_tallas_temp.split('*');
+               // var tallas_ = cabeceras_tallas_temp.split('*');
+                //var indice_tallas_extra = 0;
+                /*for (var i = 1; i < (cabeceras_tabla.length ); i++) {
+                    var temp = 0;
+                    $('#tabla_temporal_sa_ed thead tr').each(function () {
+                        if (temp == 12) {
+                            if (cabeceras_tabla[i] != '') {
+                               // var htm = '<td class="colx' + x + '" style="vertical-align:middle;"><input    maxlength="6" class="numeric  qty form-control " value="0" />'+
+                                           '<input    maxlength="6" class="validacion tallas form-control " placeholder="Size" /></td > ';  //PIEZAS
+                                //$(this).find('th').eq(2 + i).html('<input id="caja_talla_x_'+arr_col_extras[indice_tallas_extra]+'" placeholder="SIZE" maxlength="6" class="validacion form-control tallas" style="border:none; margin:auto !important; padding:0px; width:58%; height:20px;" value="' + cabeceras_tabla[i] + '" />');
+                              //  $(this).find('th').eq(2 + i).html();
+                                indice_tallas_extra++;
+                            } else {
+                                $(this).find('th').eq(2 + i).html(' ');
+                            }
+                        }
+                        temp++;
+                    });
+                  }*/
+                 var html2 = '';
+                 var id_nuevos = []; 
+                 $.each(samples_packing, function (key, s) {
+                     if (s.tipo_sample == 1) {
+                         estilos_nuevos_e = s.id_summary;
+                         contador_estilos_nuevos_e++;
+                         html2 = '';
+                         html2 += '<tr><td>'+estilos_nuevos_e+'</td>';//ID
+                         html2 += '<td><input  maxlength="50"  class="validacion form-control " value="'+s.pedido+'" /></td>';//PO
+                         html2 += '<td><input  maxlength="100"  class="validacion form-control " value="'+s.estilo+'" /></td>';//STYLE
+                         html2 += '<td><input  maxlength="200"  class="validacion form-control color" value="' + s.color + '" /></td>';//COLOR
+                         html2 += '<td><input  maxlength="200"  class="validacion form-control color" value="' + s.descripcion + '" /></td>';//DESCRIPTION
+                         html2 += '<td><input  maxlength="200"  class="validacion form-control origen" value="'+s.origen+'" /></td>';//ORIGIN
+                         html2 += '<td><input  maxlength="200"  class="validacion form-control porcentaje" value="'+s.porcentaje+'" /></td>';//%
+                         html2 += '<td><input  maxlength="200"  class="validacion form-control genero" value="'+s.genero+'" /></td>';//GENDER
+                         html2 += '<td><button type="button" title="Delete row"  class="btn btn-light deleteRowEstiloNuevo"><b>-</b></button></td>';
+                         html2 += '<td><button type="button" title="Add to sizes table"  class="btn btn-warning" onclick="agregar_nuevo_tallas_e('+estilos_nuevos_e+')"><b>+</b></button></td></tr>';
+                         $('.rows_tabla_nuevos_estilos_e').append(html2);
+                         $('#tabla_nuevos_estilos_e').css('visibility','visible');
+                     }                   
+                 });
+                ////////////////////////////////////////////////////////////////////////////////////////////////
+                ////////////////////////////////////////////////////////////////////////////////////////////////
+
+                var html;
+                 $.each(indices_lista, function (key, ii) {
+                     $.each(samples_packing, function (key, s) {
+                         if (ii.id_tarima == s.id_tarima) {                            
+                            html = '<tr id="rowEd' + ii.id_tarima + '"><td style=" color:white; width:1px;vertical-align:middle;">' + ii.id_tarima + '</td>';
+                            if (s.inicial == 1) {
+                                 if (s.tipo_sample == 1) {
+                                     html += '<td style="width:1px;vertical-align:middle; color:white;">' + s.id_summary + '</td><td style="vertical-align:middle;">NEWSTYLE-' + s.id_summary + '</td>';//ESTILO   
+                                 } else {
+                                     html += '<td style="width:1px;vertical-align:middle; color:white;">' + s.id_summary + '</td><td style="vertical-align:middle;">' + s.estilo + '</td>';//ESTILO   
+                                 }                                          
+                             } else {
+                                 html += '<td></td>';
+                                 html += '<td><select class="form-control  estilos_request " style="" id="" >';                                
+                                 $.each(s.lista_estilos, function (key, r) {
+                                     if (s.tipo_sample == 1) {
+                                         //str1.indexOf(str2) != -1
+                                         if (r.id_summary == s.id_summary && r.estilo.indexOf('NEWSTYLE') != -1) {
+                                             html += '<option  value="' + r.id_summary + '" selected >' + r.estilo + '</option>';
+                                         } else {
+                                             html += '<option  value="' + r.id_summary + '">' + r.estilo + '</option>';
+                                         }
+                                     } else {
+                                         if (r.id_summary == s.id_summary) {
+                                             html += '<option  value="' + r.id_summary + '" selected >' + r.estilo + ' ' + r.descripcion + '</option>';
+                                         } else {
+                                             html += '<option  value="' + r.id_summary + '">' + r.estilo + ' ' + r.descripcion + '</option>';
+                                         }
+                                     }
+                                 });
+                                 html += '</select></td>';
+                             }                              
+                             html += '<td style="vertical-align:middle;"><input    maxlength="6" class="numeric qty form-control " value="' + s.talla_xs + '" />' +
+                                 '<input    maxlength="6" class="validacion tallas  qty form-control " placeholder="Size" value="' + s.tallaxs + '" /></td > ';  //PIEZAS
+                             html += '<td  style="vertical-align:middle;"><input    maxlength="6" class="numeric  qty form-control " value="' + s.talla_s + '" />' +
+                                 '<input    maxlength="6" class="validacion tallas form-control " placeholder="Size"  value="' + s.tallas + '" /></td > ';  //PIEZAS
+                             html += '<td style="vertical-align:middle;"><input    maxlength="6" class="numeric  qty form-control " value="' + s.talla_m + '" />' +
+                                 '<input    maxlength="6" class="validacion tallas form-control " placeholder="Size"  value="' + s.tallam + '"/></td > ';  //PIEZAS
+                             html += '<td  style="vertical-align:middle;"><input    maxlength="6" class="numeric  qty form-control " value="' + s.talla_l + '" />' +
+                                 '<input    maxlength="6" class="validacion tallas form-control " placeholder="Size"  value="' + s.tallal + '" /></td > ';  //PIEZAS
+                             html += '<td  style="vertical-align:middle;"><input    maxlength="6" class="numeric  qty  form-control " value="' + s.talla_xl + '" />' +
+                                 '<input    maxlength="6" class="validacion tallas form-control " placeholder="Size"  value="' + s.tallaxl + '"  /></td > ';  //PIEZAS
+                             html += '<td  style="vertical-align:middle;"><input    maxlength="6" class="numeric  qty form-control " value="' + s.talla_2x + '" />' +
+                                 '<input    maxlength="6" class="validacion tallas form-control " placeholder="Size"  value="' + s.talla2x + '"  /></td > ';  //PIEZAS
+                             html += '<td style="vertical-align:middle;"><input    maxlength="6" class="numeric  qty form-control " value="' + s.talla_3x + '" />' +
+                                 '<input    maxlength="6" class="validacion tallas form-control " placeholder="Size"  value="' + s.talla3x + '"  /></td > ';  //PIEZAS
+                             
+ 
+                             $.each(arr_col_extras, function (key, col_extra) {
+                                var existe = 0;
+                                 $.each(s.lista_extras, function (key, x) {
+                                     if (col_extra == x.columna) {
+                                         existe++;
+                                        // html += '<td class="colx' + col_extra + '" style="vertical-align:middle;text-align:center;"><input maxlength="6" class="numeric qty form-control " style="margin: auto !important;" value="' + x.total + '" /></td > ';
+                                        html += '<td class="colx'+col_extra+'"  style="vertical-align:middle;"><input    maxlength="6" class="numeric  qty form-control " value="' + x.total  + '" />' +
+                                        '<input    maxlength="6" class="validacion tallas form-control " placeholder="Size"  value="' + x.talla + '"  /></td > ';  //PIEZAS
+                                     }
+                                 });
+                                 if (existe == 0) {
+                                    // html += '<td class="colx' + col_extra + '" style="vertical-align:middle;text-align:center;"><input maxlength="6" class="numeric qty form-control " style="margin: auto !important;" value="0" /></td > ';
+                                      html += '<td style="vertical-align:middle;"><input    maxlength="6" class="numeric  qty form-control " value="0" />' +
+                                     '<input    maxlength="6" class="validacion tallas form-control " placeholder="Size"  value=""  /></td > ';  //PIEZAS
+                                 }
+                             });
+ 
+ 
+                            if (s.inicial == 1) {
+                                 html += '<td style="vertical-align:middle;"><input    maxlength="6" class="numeric form-control " value="' + s.cajas + '" />';//BXS
+                                 html += '<button type="button"  title="Add style to this box" class="btn btn-light " onclick="agregar_rowspan_ed(\'' + ii.id_tarima + '*' + s.id_summary + '\')" >Add Style</button></td>';//BXS
+                                 html += '<td style="vertical-align:middle;"><input   maxlength="200"  class="validacion form-control " id="" value="' + s.attnto + '" /></td>';//ATTNTO
+                             } else {
+                                 html += '<td></td><td></td>';
+                             }
+                             html += '<td style="vertical-align:middle;"><button type="button" title="Delete row"  class="btn btn-light deleteRowSaEd"><b>-</b></button></td>';
+                             if (datos_cabecera[1]== ii.id_tarima) {
+                                 html += '<td><br/><input type="checkbox" checked class="tallas_cabecera"  id="cajacabecera_' + ii.id_tarima + '" /> </td>';    
+                             } else {
+                                  html += '<td><br/><input type="checkbox"  class="tallas_cabecera"  id="cajacabecera_' + ii.id_tarima + '" /> </td>';    
+                             }
+
+                             if (s.inicial == 1) {
+                                 html += '<td  style="color:white;">' + s.tipo_sample + '</td></tr>';//ATTNTO
+                             } else { 
+                                 html += '<td  style="color:white;">0</td></tr>';//ATTNTO
+                             }
+                             estilos_seleccionados_sa_ed++;
+                             $('#div_tabla_temporal_sa_ed').css('visibility', 'visible');
+                             $('.rows_tabla_temporal_sa_ed').append(html);
+                         }
+                     });
+                     indice_sa_ed = ii.id_tarima;
+                 });
+                 $("#loading_pk_sa_ed").css('display', 'none');
+             }
+         });           
+     }
+    function agregar_rowspan_ed(informacion) {
+        var data = informacion.split("*"); 
+        var buscar = data[1];
+        if (data[2] == '1') {
+            buscar = 0;
+        }
+         $.ajax({
+             url: '/Shipping/buscar_estilos_summary',
+             data:"{'summary':'"+buscar+"'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                var html = '<tr><td style="width:1px;vertical-align:middle;  color:white;">' + data[0] + '</td>';
+                html += '<td style="width:1px;vertical-align:middle; color:white;"></td>';
+                //html += '<td style="vertical-align:middle;">' + data[1] + '</td>';//ESTILO   
+                html += '<td><select class="form-control  estilos_request " style="" id="" >';
+                $.each(result, function (key, item) {
+                     html += '<option  value="' + item.id_summary + '">' + item.estilo + ' ' + item.descripcion + '</option>';
+                });
+                if (contador_estilos_nuevos_e != 0){
+                    $('#tabla_nuevos_estilos_e tbody tr').each(function () {
+                        html += '<option  value="' + $(this).find('td:eq(0)').html() + '">NEWSTYLE-' + $(this).find('td:eq(0)').html()+ '</option>';
+                    });
+                }
+                html += '</select></td>';
+                html += '<td style="vertical-align:middle;"><input    maxlength="6" class="numeric qty form-control " value="0" />'+
+                '<input    maxlength="6" class="validacion tallas  qty form-control " placeholder="Size" /></td > ';  //PIEZAS
+                html += '<td  style="vertical-align:middle;"><input    maxlength="6" class="numeric  qty form-control " value="0" />'+
+                '<input    maxlength="6" class="validacion tallas form-control " placeholder="Size" /></td > ';  //PIEZAS
+                html += '<td style="vertical-align:middle;"><input    maxlength="6" class="numeric  qty form-control " value="0" />'+
+                '<input    maxlength="6" class="validacion tallas form-control " placeholder="Size" /></td > ';  //PIEZAS
+                html += '<td  style="vertical-align:middle;"><input    maxlength="6" class="numeric  qty form-control " value="0" />'+
+                '<input    maxlength="6" class="validacion tallas form-control " placeholder="Size" /></td > ';  //PIEZAS
+                html += '<td  style="vertical-align:middle;"><input    maxlength="6" class="numeric  qty  form-control " value="0" />'+
+                '<input    maxlength="6" class="validacion tallas form-control " placeholder="Size" /></td > ';  //PIEZAS
+                html += '<td  style="vertical-align:middle;"><input    maxlength="6" class="numeric  qty form-control " value="0" />'+
+                '<input    maxlength="6" class="validacion tallas form-control " placeholder="Size" /></td > ';  //PIEZAS
+                html += '<td style="vertical-align:middle;"><input    maxlength="6" class="numeric  qty form-control " value="0" />'+
+                    '<input    maxlength="6" class="validacion tallas form-control " placeholder="Size" /></td > ';  //PIEZAS
+                $.each(arr_col_extras, function (key, x) {
+                   // html += '<td class="colx' + x + '" style="vertical-align:middle;text-align:center;"><input maxlength="6" class="numeric qty form-control " style="margin: auto !important;" value="0" /></td > ';
+                    html += '<td class="colx' + x + '" style="vertical-align:middle;"><input    maxlength="6" class="numeric  qty form-control " value="0" />'+
+                    '<input    maxlength="6" class="validacion tallas form-control " placeholder="Size" /></td > ';  //PIEZAS
+                });
+                html += '<td></td><td></td>';                     
+                html += '<td style="vertical-align:middle;" ><button type="button"  title="Delete row" class="btn btn-light deleteRowSaEd"><b>-</b></button></td></tr>'; 
+                html += '<td><br/><input type="checkbox"  class="tallas_cabecera"  id="cajacabecera_' + data[0] + '" /> </td>';  
+                html += '<td style="color:white;">0</td></tr>';
+                estilos_seleccionados_sa_ed++;
+                /*var rowspan = parseInt($('#rowBox' + data[0]).attr('rowspan')) + 1;
+                $('#rowBox'+data[0]).attr('rowspan', rowspan);
+                $('#attent'+data[0]).attr('rowspan', rowspan);*/
+
+                //var row_index = $(this).parent('#tabla_temporal_sa').index(); 
+                var row_index = $('#tabla_temporal_sa_ed #rowEd'+data[0]).index(); //.index()
+                //alert(row_index);
+                $('#tabla_temporal_sa_ed tr:eq(' + row_index + ')').after(html); 
+                //$(html).insertAfter($('#tabla_temporal_sa #row'+data[0]));
+                //$('#my_table > tbody > tr').eq(i-1).after(html);
+
+
+               // $('.rows_tabla_temporal_sa').append(html); 
+            }
+        });
+   
+    }
+
+
+
+
+
+     $(document).on("change", ".tallas_cabecera", function () {
+        var nombre = this.id;
+        if ($(nombre).is(":checked")) {
+            $(nombre).prop('checked', false);
+        } else {
+            $(nombre).prop('checked', true);
+        }
+        var data = nombre.split('_');
+        $('#tabla_temporal_sa_ed tbody tr').each(function () {
+            if ($(this).find('td:eq(0)').html() != data[1]) {           
+                $(this).find('td:eq(13) input').prop('checked', false);
+            }            
+        });       
+    });
+    /**********************************************************************************************************************************************************************************************/
+    /**********************************************************************************************************************************************************************************************/
+    /**********************************************************************************************************************************************************************************************/
+    /**********************************************************************************************************************************************************************************************/
+    /**********************************************************************************************************************************************************************************************/
+    function obtener_contenedores_sa_ed() {
+        $("#loading_pk_sa_ed").css('display', 'inline');
+        $.ajax({
+            url: '/Shipping/buscar_contenedores_select',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                //var html = '<label class="">Container&nbsp;</label> <select class="form-control pk ui search dropdown " id="caja_contenedor_pk" >';
+                var html = '';
+                // var html = '<select class="form-control " id="caja_contenedor_pk" >';
+                $.each(result, function (key, item) {
+                    html += '<option  value="' + item.id_container + '">' + item.eco + '</option>';
+                });
+               // html += '</select>';
+                $(".contenedores_sa_ed").append(html);
+            }
+        });
+    }
+    function obtener_conductores_sa_ed() {
+        $.ajax({
+            url: '/Shipping/buscar_conductores_select',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                //var html = '<label class="">Driver&nbsp;</label> <select class="form-control pk js-example-basic-single " id="caja_conductor_pk" >';
+                var html = '';
+                //var html = '<select class="form-control " id="caja_conductor_pk" >';
+                $.each(result, function (key, item) {
+                    html += '<option value="' + item.id_driver + '">' + item.driver_name + '</option>';
+                });
+                //html += '</select>';
+                $(".conductores_sa_ed").append(html);
+            }
+        });
+    }
+    function obtener_direcciones_pk_sa_ed() {
+        $.ajax({
+            url: '/Shipping/buscar_direcciones_select',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                var html = '<label class="">Address&nbsp;</label> <select class="form-control pk" id="caja_direccion_pk_sa_ed" >';
+                //var html = '<select class="form-control " id="caja_direccion_pk" >';
+                $.each(result, function (key, item) {
+                    html += '<option  value="' + item.id_direccion + '">' + item.nombre + '</option>';
+                });
+                html += '</select>';
+                $("#div_shipto_sa_ed").html(html);
+                $("#loading_pk_sa_ed").css('display', 'none');
+            }
+        });
+    }
+    function po_keyup(e) {
+        if (e.keyCode == 13) {
+            obtener_estilos_tarimas_sa_ed($("#caja_po_number_pk_sa_ed").val());
+        }
+    }
+       
+    function llenar_po_sa_ed() {
+        $.ajax({
+            url: '/Shipping/buscar_pedidos',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                var html = ''; //'<label class="">PO&nbsp;</label> <select class="form-control js-example-basic-single" id="caja_pedido" >';
+                html += '<option  value="0">Select</option>';
+                $.each(result, function (key, item) {
+                    html += '<option  value="' + item.id_pedido + '">' + item.po + '</option>';
+                });
+                //html += '</select>';
+                $(".pedidos_sa_ed").append(html);
+            }
+        });
+    }
+   
+    function guardar_pk_fa_ed(event) {
+        var error = 0; 
+        if ($("#caja_pedido_fa_ed").val() == '') {
+            $(this).css('border', '2px solid #e03f3f');
+            error++;
+        } else {
+            $(this).css('border', '1px solid #cccccc');
+        }                
+        if (error == 0) {
+            $("#load_shipping_sa_ed").css('display', 'inline');
+            enviar_datos_pk_sa_ed();            
+            $("#load_shipping_sa_ed").css('display', 'none');
+        } else {
+            $("#load_shipping_sa_ed").css('display', 'none');
+            event.preventDefault();
+            alertify.alert('Error!', 'Check empty fields, please');
+            return false;
+        }
+    }
+    var columnas_dc_fa_ed, rows_dc_fa_ed = 0, columnas_estilos_dc_fa_ed;
+    function redireccionarPagina_sa_ed() { window.location = '/Shipping/Index'; }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////NUEVO JS PARA LOS NUEVOS PACKING LIST//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   
+    var lista_estilo_sa_ed;
+    var lista_assorts_sa_ed;    
+    var tallas_fa_ed, idTallas_fa_ed;
+    var columnas_dc_ppk_sa_ed, columnas_dc_bp_sa_ed, rows_dc_ppk_sa_ed, rows_dc_bp_sa_ed, estilos_seleccionados_sa_ed;
+    
+    $(document).on("change", "#caja_pedido_estilo_sa_ed", function () {
+        estilos_po_sa_ed();
+    });
+
+    function estilos_po_sa_ed() {
+        $("#loading_pk_sa_ed").css('display', 'inline');
+        $.ajax({
+            url: '/Shipping/obtener_estilos_orden',
+            data: "{'pedido':'" + $("#caja_pedido_estilo_sa_ed").val() + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (jsonData) {
+                // cantidades_estilo_pedido = jsonData.Data.cantidades_estilos;//AQUI ES DONDE VOY A JALAR LAS CANTIDADES POR ESTILO Y TALLA
+                lista_estilo_sa_ed = jsonData.Data.estilos;//AQUI ES DONDE VOY A JALAR LAS CANTIDADES POR ESTILO Y TALLA
+                lista_assorts_sa_ed = jsonData.Data.assorts;//AQUI ES DONDE VOY A JALAR LAS CANTIDADES POR ESTILO Y TALLA                
+               
+                $("#caja_number_po_sa_ed").val(jsonData.Data.number_po);
+                var html = '';
+                $(".rows_estilos_sa_ed").html('');
+                $.each(lista_estilo_sa_ed, function (key, item) {  //ESTILOS PPK O BP EN LISTA ESTILOS
+                    //$.each(item.lista_empaque, function (key, e) {
+                        html += '<tr>';
+                        html += '<td style=" width:5%;">' + item.id_summary + '</td>';
+                        html += '<td style=" width:24%;"><p>' + item.estilo + '</p></td>';
+                        html += '<td style=" width:26%;">' + item.descripcion + '</td>';
+                        html += '<td style=" width:24%;">' + item.color + '</td>';                        
+                        html += '</tr>';
+                    //});
+                });
+                $.each(lista_assorts_sa_ed, function (key, item) { //ASSORMENTS EN LISTA DE ESTILOS
+                    html += '<tr>';
+                    html += '<td style="width:5%; ">' + item.id_assortment + '</td>';
+                    html += '<td style=" width:24%;">' + item.nombre + '</td>';
+
+                    html += '<td style=" width:26%;">';
+                    $.each(item.lista_estilos, function (key, e) {
+                        html += '<p>' + e.estilo + ' ' + e.descripcion + '</p>';  //DESCRIPCIÓN DE LOS ESTILOS DE LOS ASSORT
+                    });
+                    html += '</td>';
+                    html += '<td style=" width:24%;"></td>';                    
+                    html += '</tr>';                    
+                });                           
+                $("#div_estilos_sa_ed").css('visibility', 'visible');//TABLA DE ESTILOS VISIBLES
+                $(".rows_estilos_sa_ed").html(html);
+                $("#loading_pk_sa_ed").css('display', 'none');
+                
+            }
+        });
+    }
+    $(document).on("dblclick", "#tabla_estilos_sa_ed tr", function () {
+        var row = this.rowIndex;
+        var id = $('#tabla_estilos_sa_ed tr:eq(' + row + ') td:eq(0)').html();
+        var estilo = $('#tabla_estilos_sa_ed tr:eq(' + row + ') td:eq(1)').html();
+        var descripcion = $('#tabla_estilos_sa_ed tr:eq(' + row + ') td:eq(2)').html();
+        agregar_fila_sa_ed(id + "&" + estilo + " " + descripcion+"&0");
+        
+        //gregar_fila(id + "&" + estilo + " " + descripcion + "&" + tipo_empaque);
+    });
+    function agregar_fila_sa_ed(informacion) {
+        var data = informacion.split("&");
+        indice_sa_ed++;
+        var html = '<tr id="rowEd'+indice_sa_ed+'"><td style=" color:white; width:1px;vertical-align:middle;">' + indice_sa_ed + '</td>';
+        html += '<td style="width:1px;vertical-align:middle;color:white; ">' + data[0] + '</td><td style="vertical-align:middle;">' + data[1] + '</td>';//ESTILO               
+        html += '<td style="vertical-align:middle;"><input    maxlength="6" class="numeric qty form-control " value="0" />'+
+        '<input    maxlength="6" class="validacion tallas  qty form-control " placeholder="Size" /></td > ';  //PIEZAS
+        html += '<td  style="vertical-align:middle;"><input    maxlength="6" class="numeric  qty form-control " value="0" />'+
+        '<input    maxlength="6" class="validacion tallas form-control " placeholder="Size" /></td > ';  //PIEZAS
+        html += '<td style="vertical-align:middle;"><input    maxlength="6" class="numeric  qty form-control " value="0" />'+
+        '<input    maxlength="6" class="validacion tallas form-control " placeholder="Size" /></td > ';  //PIEZAS
+        html += '<td  style="vertical-align:middle;"><input    maxlength="6" class="numeric  qty form-control " value="0" />'+
+        '<input    maxlength="6" class="validacion tallas form-control " placeholder="Size" /></td > ';  //PIEZAS
+        html += '<td  style="vertical-align:middle;"><input    maxlength="6" class="numeric  qty  form-control " value="0" />'+
+        '<input    maxlength="6" class="validacion tallas form-control " placeholder="Size" /></td > ';  //PIEZAS
+        html += '<td  style="vertical-align:middle;"><input    maxlength="6" class="numeric  qty form-control " value="0" />'+
+        '<input    maxlength="6" class="validacion tallas form-control " placeholder="Size" /></td > ';  //PIEZAS
+        html += '<td style="vertical-align:middle;"><input    maxlength="6" class="numeric  qty form-control " value="0" />'+
+        '<input    maxlength="6" class="validacion tallas form-control " placeholder="Size" /></td > ';  //PIEZAS
+        $.each(arr_col_extras, function (key, x) {
+            html += '<td class="colx' + x + '" style="vertical-align:middle;text-align:center;"><input maxlength="6" class="numeric qty form-control " style="margin: auto !important;" value="0" /></td > ';
+        });
+        html += '<td style="vertical-align:middle;" id="rowBox'+indice_sa_ed+'" rowspan="1"><input    maxlength="6" class="numeric form-control " value="1" />';
+        html += '<button type="button"  title="Add style" class="btn btn-light " onclick="agregar_rowspan_ed(\'' + indice_sa_ed + '*' +  data[0] + '*' +  data[2] + '\')" >Add Style</button></td>';//BXS
+        html += '<td style="vertical-align:middle;"><input   maxlength="200"  class="validacion form-control " id="" /></td>';//ATTNTO
+        html += '<td style="vertical-align:middle;"><button type="button"  title="Delete row" class="btn btn-light deleteRowSaEd"><b>-</b></button></td>';
+        html += '<td><br/><input type="checkbox" class="tallas_cabecera" id="cajacabecera_'+indice_sa_ed+'" /> </td>';        //<span class=""> &nbsp;Headers </span>
+        html += '<td style="color:white;">' + data[2] + '</td></tr>';   
+
+        estilos_seleccionados_sa_ed++;
+        $('#div_tabla_temporal_sa_ed').css('visibility', 'visible');
+        $('.rows_tabla_temporal_sa_ed').append(html);
+    }
+    //ELIMINAR FILAS TEMPORALES
+    $(document).on("click", ".deleteRowSaEd", function () {
+        $(this).closest("tr").remove();
+        estilos_seleccionados_sa_ed--;
+        if (estilos_seleccionados_sa_ed > 0) {
+            $('#div_tabla_temporal_sa_ed').css('visibility', 'visible');
+        } else {
+            $('#div_tabla_temporal_sa_ed').css('visibility', 'hidden');
+        }
+    });
+
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    function enviar_datos_pk_fa_ed() { //ENVIAR DATOS PACKING LIST- INFORMACIÓN GENERAL, NOS REGRESA LOS ESTILOS DE ESA ORDEN       
+        var seal_sa, replacement_sa;
+        if ($("#caja_seal_pk_sa_ed").val() == '') { seal_sa = 'N/A'; } else { seal_sa = $("#caja_seal_pk_sa_ed").val(); }
+        if ($("#caja_replacement_pk_sa_ed").val() == '') { replacement_sa = 'N/A'; } else { replacement_sa = $("#caja_replacement_pk_sa_ed").val(); }
+        $.ajax({
+            url: '/Shipping/guardar_edicion_pk',
+            data: "{'packing':'" + $("#caja_packing_sa_ed").val() + "','po':' ','address':'" + $("#caja_direccion_pk_sa_ed").val() + "','driver':'" + $("#caja_conductor_pk_sa_ed").val() + "','container':'" + $("#caja_contenedor_pk_sa_ed").val() + "','seal':'" + seal_sa + "','replacement':'" + replacement_sa + "','tipo':'2','labels':'N/A','type_labels':'N/A','num_envio':'" + $("#caja_num_envio_sa_ed").val() + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (jsonData) {
+               enviar_estilos_pk_sa_ed();
+            }
+        });
+             
+    }
+    var errores_cabeceras;
+    var summary_sa_ed, attnto_ed, caja_sa_ed, xs_sa_ed, sm_sa_ed, md_sa_ed, lg_sa_ed, xl_sa_ed, xxl_sa_ed, xxxl_sa_ed, tallas_sa_ed, cantidades_sa_ed, index_sa_ed, inicial_sa_ed,tipo_sample_e;
+    var id_new_e, po_new_e, estilo_new_e, color_new_e, descripcion_new_e, origen_new_e, porcentaje_new_e, genero_new_e,cabecera_e;
+    function revisar_informacion_pk_sa_ed(event) {       
+        $("#loading_pk_sa_ed").css('display', 'inline');        
+        var error = 0; errores_cabeceras = 0;     
+        summary_sa_ed = ''; attnto_ed = ''; caja_sa_ed = ''; 
+        //xs_sa = ''; sm_sa = ''; md_sa = ''; lg_sa = ''; xl_sa = ''; xxl_sa = ''; xxxl_sa = '';
+        tallas_sa_ed = ''; cantidades_sa_ed = ''; index_sa_ed = ''; inicial_sa_ed = ''; tipo_sample_e = ''; cabecera_e = '';
+        id_new_e = ''; po_new_e = ''; estilo_new_e = ''; color_new_e = ''; descripcion_new_e = ''; origen_new_e = ''; porcentaje_new_e = ''; genero_new_e = ''; 
+        $('#tabla_temporal_sa_ed tbody tr').each(function () {
+            index_sa_ed += "*" + $(this).find('td:eq(0)').html();
+            if ($(this).find('td:eq('+(13 + arr_col_extras.length)+') input').is(":checked")) {
+                cabecera_e += '*1';
+            } else {
+                cabecera_e += '*0';
+            }
+            if ($(this).find('td:eq('+(14 + arr_col_extras.length)+')').html() == '1') {
+                obtener_estilo_nuevo_e($(this).find('td:eq(1)').html());
+            } else {
+                if (($(this).find('td:eq(2) option:selected').text()).indexOf('NEWSTYLE-') != -1 && $(this).find('td:eq(1)').html()=='' ) {
+                    obtener_estilo_nuevo_e($(this).find('td:eq(2) option:selected').val());
+                }
+            }
+
+            if ($(this).find('td:eq(1)').html() != '') {
+                summary_sa_ed +="*"+ $(this).find('td:eq(1)').html();           
+                inicial_sa_ed += '*1';
+               /*if ($(this).find('td:eq('+(10 + arr_col_extras.length)+') input ').val() == '0' || $(this).find('td:eq(10) input ').val() == '') {
+                    error++;
+                    $(this).find('td:eq('+(10 + arr_col_extras.length)+') input').css('border', '1px solid #cccccc');
+                } */
+                caja_sa_ed += "*" + $(this).find('td:eq('+(10 + arr_col_extras.length)+') input ').val(); 
+                /*if ($(this).find('td:eq('+(11 + arr_col_extras.length)+') input ').val() == '0' || $(this).find('td:eq(11) input ').val() == '') {
+                    error++;
+                    $(this).find('td:eq('+(11 + arr_col_extras.length)+') input').css('border', '1px solid #cccccc');
+                } */
+                attnto_ed += "*" + $(this).find('td:eq('+(11 + arr_col_extras.length)+') input').val();
+                tipo_sample_e += "*" + $(this).find('td:eq('+(14 + arr_col_extras.length)+')').html();
+            } else {
+                if (($(this).find('td:eq(2) option:selected').text()).indexOf('NEWSTYLE-') != -1) {
+                    tipo_sample_e += "*1";//+ $(this).find('td:eq(13)').html();
+                } else {
+                    tipo_sample_e += "*0";// + $(this).find('td:eq(13)').html();
+                }
+                summary_sa_ed += "*" + $(this).find('td:eq(2) option:selected').val();
+                inicial_sa_ed += '*0';
+                caja_sa_ed += "*0";
+                attnto_ed += "*0";
+            }   
+            
+            tallas_sa_ed += "*";
+            cantidades_sa_ed += "*";
+            var error_cantidad = 0;
+            for (var i = 3; i < 10; i++) {
+                if ($(this).find('td:eq(' + i + ') input.qty ').val() != '0' && $(this).find('td:eq(' + i + ') input.qty ').val() != '') {
+                    error_cantidad++;
+                    if ($(this).find('td:eq(' + i + ') input.tallas ').val() == '') {
+                        error++;
+                        $(this).find('td:eq(' + i + ') input.tallas').css('border', '2px solid #e03f3f');
+                    } else {
+                        $(this).find('td:eq(' + i + ') input.tallas').css('border', '1px solid #cccccc');
+                    }                    
+                } 
+                if ( $(this).find('td:eq(' + i + ') input.tallas ').val() != '') {
+                    if ($(this).find('td:eq(' + i + ') input.qty ').val() == '0' || $(this).find('td:eq(' + i + ') input.qty ').val() == '') {
+                        error++;
+                        $(this).find('td:eq(' + i + ') input.qty').css('border', '2px solid #e03f3f');
+                    } else {
+                        $(this).find('td:eq(' + i + ') input.qty').css('border', '1px solid #cccccc');
+                    }
+                }
+                tallas_sa_ed += "&" + $(this).find('td:eq('+i+') input.tallas ').val();
+                cantidades_sa_ed += "&" + $(this).find('td:eq(' + i +') input.qty ').val();
+            }
+            var para_array = 0;
+            for (var i = 10; i < (10 + arr_col_extras.length); i++) {//CANTIDADES Y TALLAS   
+                if ($(this).find('td:eq(' + i + ') input ').val() != '' && $(this).find('td:eq(' + i + ') input ').val() != "0") {
+                    //cantidades_sa_ed += "&" + $(this).find('td:eq(' + i + ') input ').val();
+                    //tallas_sa_ed += "&" + $("#caja_talla_x_" + arr_col_extras[para_array]).val();//$(this).find('td:eq('+i+') input.tallas ').val();
+                    error_cantidad++;
+                    tallas_sa_ed += "&" + $(this).find('td:eq(' + i + ') input.tallas ').val();
+                    cantidades_sa_ed += "&" + $(this).find('td:eq(' + i +') input.qty ').val();
+                }
+                if ($(this).find('td:eq(' + i + ') input.qty ').val() != '0' && $(this).find('td:eq(' + i + ') input.qty ').val() != '') {                    
+                    if ($(this).find('td:eq(' + i + ') input.tallas ').val() == '') {
+                        error++;
+                        $(this).find('td:eq(' + i + ') input.tallas').css('border', '2px solid #e03f3f');
+                    } else {
+                        $(this).find('td:eq(' + i + ') input.tallas').css('border', '1px solid #cccccc');
+                    }                   
+                } 
+                if ( $(this).find('td:eq(' + i + ') input.tallas ').val() != '') {
+                    if ($(this).find('td:eq(' + i + ') input.qty ').val() == '0' || $(this).find('td:eq(' + i + ') input.qty ').val() == '') {
+                        error++;
+                        $(this).find('td:eq(' + i + ') input.qty').css('border', '2px solid #e03f3f');
+                    } else {
+                        $(this).find('td:eq(' + i + ') input.qty').css('border', '1px solid #cccccc');
+                    }
+                }
+                para_array++;
+            }
+            if (error_cantidad == 0) { error++; }            
+            
+        });             
+        if (error == 0) {
+            $("#loading_pk_sa_ed").css('display', 'none');
+            enviar_datos_pk_fa_ed();
+        } else {
+            $("#loading_pk_sa_ed").css('display', 'none');
+            event.preventDefault();
+            alertify.alert('Error!', 'Check empty fields, please');
+            return false;
+        }
+    }
+    function obtener_estilo_nuevo_e(id) {
+        var temporal = id_new_e.split('*');
+        var existe = 0;
+        for (var i = 1; i < temporal.length; i++) {
+            if (temporal[i] == id) {
+                existe++;
+            }
+        }
+        if (existe == 0) {
+            $('#tabla_nuevos_estilos_e tbody tr').each(function () {
+                //html += '<option  value="' + $(this).find('td:eq(0)').html() + '">NEWSTYLE-' + $(this).find('td:eq(0)').html()+ '</option>';
+                //id_new, po_new, estilo_new, color_new, descripcion_new, origen_new, porcentaje_new, genero_new;
+                if ($(this).find('td:eq(0)').html() == id) {
+                    id_new_e += "*" + $(this).find('td:eq(0)').html();
+                    po_new_e += "*" + $(this).find('td:eq(1) input').val();
+                    estilo_new_e += "*" + $(this).find('td:eq(2) input').val();
+                    color_new_e += "*" + $(this).find('td:eq(3) input').val();
+                    descripcion_new_e += "*" + $(this).find('td:eq(4) input').val();
+                    origen_new_e += "*" + $(this).find('td:eq(5) input').val();
+                    porcentaje_new_e += "*" + $(this).find('td:eq(6) input').val();
+                    genero_new_e += "*" + $(this).find('td:eq(7) input').val();
+                   
+                }
+            });
+        }
+    }
+
+    function enviar_estilos_pk_sa_ed() {
+        $("#loading_pk_sa_ed").css('display', 'inline');
+        $.ajax({
+            url: '/Shipping/guardar_edicion_estilos_samples',
+            //data: "{'cliente':'" + $("#caja_customer_sa").val() + "','summary':'" + summary_sa + "','caja':'" + caja_sa + "','attnto':'" + attnto + "','xs':'" + xs_sa + "','sm':'" + sm_sa + "','md':'" + md_sa + "','lg':'" + lg_sa + "','xl':'" + xl_sa + "','xxl':'" + xxl_sa + "','xxl':'" + xxxl_sa + "','talla':'" + tallas_sa + "','cantidad':'" + cantidades_sa + "'}",
+            data: "{'packing':'" + $("#caja_packing_sa_ed").val() + "','cliente':'" + $("#caja_customer_sa_ed").val() + "','summary':'" + summary_sa_ed + "','caja':'" + caja_sa_ed + "','attnto':'" + attnto_ed + "','talla':'" + tallas_sa_ed + "','cantidad':'" + cantidades_sa_ed + "','indice':'" + index_sa_ed + "','inicial':'" + inicial_sa_ed + "','tipo_sample':'" + tipo_sample_e + "','id_new':'" + id_new_e + "','po_new':'" + po_new_e + "','estilo_new':'" + estilo_new_e + "','color_new':'" + color_new_e + "','descripcion_new':'" + descripcion_new_e + "','origen_new':'" + origen_new_e + "','porcentaje_new':'" + porcentaje_new_e + "','genero_new':'" + genero_new_e + "','cabecera':'" + cabecera_e + "','total_col_extras':'" + arr_col_extras.length + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) { 
+                var error = result;                
+                if (error == 1) {
+                    $("#loading_pk_sa_ed").css('display', 'none');      
+                    alertify.alert('Error!', 'Check the quantities, please');
+                    event.preventDefault();
+                    return false;                    
+                } else {
+                    $("#loading_pk_sa_ed").css('display', 'none');               
+                    alertify.success('Succes!');
+                    alertify.set('notifier', 'position', 'top-right');
+                    redireccionarPagina_sa_ed();     
+                }
+            }
+        });
+    }
+    
+    /********************************************************************************************************************************************************************/
+    /********************************************************************************************************************************************************************/
+    
+    function agregar_estilo_nuevo_e() {
+        contador_estilos_nuevos_e++;
+        estilos_nuevos_e++;
+        var html = '';
+        html += '<tr><td>'+estilos_nuevos_e+'</td>';//ID
+        html += '<td><input  maxlength="50"  class="validacion form-control " id="" /></td>';//PO
+        html += '<td><input  maxlength="100"  class="validacion form-control " id="" /></td>';//STYLE
+        html += '<td><input  maxlength="200"  class="validacion form-control color" id="" /></td>';//COLOR
+        html += '<td><input  maxlength="200"  class="validacion form-control color" id="" /></td>';//DESCRIPTION
+        html += '<td><input  maxlength="200"  class="validacion form-control origen" id="" /></td>';//ORIGIN
+        html += '<td><input  maxlength="200"  class="validacion form-control porcentaje" id="" /></td>';//%
+        html += '<td><input  maxlength="200"  class="validacion form-control genero" id="" /></td>';//GENDER
+        html += '<td><button type="button"  title="Delete row" class="btn btn-light deleteRowEstiloNuevo"><b>-</b></button></td>';
+        html += '<td><button type="button"  title="Add to sizes table" class="btn btn-warning" onclick="agregar_nuevo_tallas_e('+estilos_nuevos_e+')"><b>+</b></button></td></tr>';
+        $('.rows_tabla_nuevos_estilos_e').append(html);
+        $('#tabla_nuevos_estilos_e').css('visibility','visible');
+        //agregar_fila_sa(estilos_nuevos + "&NEWSTYLE-" + estilos_nuevos+"&1");
+    }
+    $(document).on("click", ".deleteRowEstiloNuevo", function () {
+        var indx = $(this).closest('tr').index(); indx++;
+        var id = $('#tabla_nuevos_estilos_e tr:eq(' + indx + ') td:eq(0)').html();
+        buscar_borrar_estilo_nuevo_tallas_e(id);
+        $(this).closest("tr").remove();
+        contador_estilos_nuevos_e--;
+        if (contador_estilos_nuevos_e > 0) {
+            $('#tabla_nuevos_estilos_e').css('visibility','visible');
+        } else {
+           $('#tabla_nuevos_estilos_e').css('visibility','hidden');
+        }
+    });
+
+    function buscar_borrar_estilo_nuevo_tallas_e(id) {
+        $('#tabla_temporal_sa_ed tbody tr').each(function () {
+           // alert(id+" "+ $(this).find('td:eq(13)').html()+" "+$(this).find('td:eq(1)').html()+" "+$(this).find('td:eq(2) option:selected').text());
+             if ($(this).find('td:eq(13)').html() == "1" && $(this).find('td:eq(1)').html() == id) {
+                 $(this).closest("tr").remove();
+             } else {
+                 if ( $(this).find('td:eq(1)').html() == '' && $(this).find('td:eq(2) option:selected').val()==id) {
+                        $(this).closest("tr").remove();
+                 }
+             }
+        });
+    }
+
+    function agregar_nuevo_tallas_e(nuevo) {
+        agregar_fila_sa_ed(nuevo + "&NEWSTYLE-" + nuevo+"&1");
+    }
+    /********************************************************************************************************************************************************************/
+    /********************************************************************************************************************************************************************/
+    /********************************************************************************************************************************************************************/
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    var cols_inicio = 3, cols_tallas_obligatorias = 7, cols_finales = 4, cols_extras, contador_cols_extras,columnas_extras;
+    var arr_col_extras=[];
+    function agregar_columna() {
+        contador_cols_extras++;//nunca disminuye
+        columnas_extras++;//disminuye
+        arr_col_extras.push(contador_cols_extras);
+        agregar_columna_cabecera();
+        agregar_columna_body();
+    }
+    function agregar_columna_cabecera() {
+        var temp = 0;
+        $('#tabla_temporal_sa_ed thead tr').each(function () {
+            if (temp == 0) {
+                $(this).find('th').eq(cols_inicio + cols_tallas_obligatorias + columnas_extras - 2).after('<th class="colx' + contador_cols_extras + '" onclick="delcol(' + contador_cols_extras + ')" ><b>X</b></th>');
+            } else {
+               $(this).find('th').eq(cols_inicio + cols_tallas_obligatorias + columnas_extras - 2).after('<th class="colx'+contador_cols_extras+'"  ></th>');
+            }
+            temp++;
+        });
+    }   
+    function agregar_columna_body() {        
+       /* var html = '<td class="colx' + contador_cols_extras + '" style="vertical-align:middle;text-align:center;"><input maxlength="6" class="numeric qty form-control " style="margin: auto !important;" value="0" /></td > ';  //PIEZAS
+        $('#tabla_temporal_sa_ed tbody tr').each(function () {
+            $(this).find('td').eq(cols_inicio + cols_tallas_obligatorias + columnas_extras - 2).after(html);
+        });*/
+
+        //var html = '<td class="colx' + contador_cols_extras + '" style="vertical-align:middle;text-align:center;"><input maxlength="6" class="numeric qty form-control " style="margin: auto !important;" value="0" /></td > ';  //PIEZAS
+        var html = '<td class="colx' + contador_cols_extras + '" style="vertical-align:middle;"><input    maxlength="6" class="numeric  qty form-control " value="0" />'+
+            '<input    maxlength="6" class="validacion tallas form-control " placeholder="Size" /></td > ';  //PIEZAS
+        $('#tabla_temporal_sa_ed tbody tr').each(function () {
+            $(this).find('td').eq(cols_inicio + cols_tallas_obligatorias + columnas_extras - 2).after(html);
+        });
+    }   
+    function delcol(num) {
+        $('.colx' + num).remove();
+        arr_col_extras = arrayRemove(arr_col_extras, num);
+        columnas_extras = columnas_extras - 1;
+    }    
+    function arrayRemove(arr,value) {
+       return arr.filter(function(ele){
+           return ele != value;
+       });
+    }
+
+
+    var tallas_cabeceras;
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+</script>
+<style>
+    #tabla_temporal_sa_ed_cabecera tr th {
+        border: none;
+        text-align: center;
+        font-size: 0.9em;
+        /*background: white;
+        color: #337ab7;*/
+        padding: 0px;
+    }
+     #tabla_temporal_sa_ed tr th {
+        border: none;
+        text-align: center;
+        font-size: 0.9em;
+        /*background: white;
+        color: #337ab7;*/
+        padding: 0px;
+    }
+    .alineacion_v {
+        vertical-align: middle;
+    }
+    .dc_estilos {
+        -webkit-appearance: none !important;
+        border: none !important;
+        background: #337ab7 !important;
+        box-shadow: none !important;
+        color: white !important;
+    }
+
+    input[type=checkbox] {
+        /* Double-sized Checkboxes */
+        -ms-transform: scale(2); /* IE */
+        -moz-transform: scale(2); /* FF */
+        -webkit-transform: scale(2); /* Safari and Chrome */
+        -o-transform: scale(2); /* Opera */
+        padding: 10px;
+    }
+
+    /* Might want to wrap a span around your checkbox text */
+    .checkboxtext {
+        /* Checkbox text */
+        font-size: 110%;
+        display: inline;
+    }
+
+    .no_caja {
+        background: none !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    .load_pk {
+        position: fixed;
+        z-index: 2001 !important;
+        height: 100%;
+        display: none;
+        border: 0;
+        padding: .5em 1em;
+        overflow: auto;
+        top: 0%;
+        left: 0%;
+        background: white;
+        width: 100%;
+        border: none;
+        opacity: 0.8;
+    }
+
+    .imagen_loading2 {
+        position: absolute;
+        z-index: 2000 !important;
+        top: 35%;
+        left: 43%;
+        width: 300px;
+        height: 300px;
+        background: url('../../Content/img/gif/loader3.gif');
+    }
+
+    tr {
+        cursor: pointer;
+    }
+
+    .counter_lr {
+        padding: 8px;
+        color: #ccc;
+    }
+
+    .agregar {
+        border-radius: 20px !important;
+        background: #3479bf !important;
+        border: solid 1px white !important;
+    }
+
+        .agregar:hover {
+            border-radius: 20px !important;
+            background: white !important;
+            border: solid 1px #3479bf !important;
+            color: #3479bf !important;
+        }
+
+    .lectura {
+        border: none !important;
+        background: none !important;
+        box-shadow: none !important;
+    }
+
+    .modal-dialog {
+        width: 75% !important;
+        padding: 2em;
+        height: 90% !important;
+        min-height: 90% !important;
+    }
+
+    .modal-content {
+        height: 90% !important;
+    }
+
+    .modal-lg {
+        max-width: 80% !important;
+    }
+
+    .panel_cajas {
+        float: left;
+        border: solid 1px #3479bf;
+        border-radius: 5px;
+        padding: .5em;
+        margin: 1em;
+    }
+
+    .modal-header-primary {
+        color: #fff;
+        padding: 9px 15px;
+        border-bottom: 1px solid #eee;
+        background-color: #3479bf;
+        -webkit-border-top-left-radius: 5px;
+        -webkit-border-top-right-radius: 5px;
+        -moz-border-radius-topleft: 5px;
+        -moz-border-radius-topright: 5px;
+        border-top-left-radius: 5px;
+        border-top-right-radius: 5px;
+    }
+
+    .x {
+        transition: transform .25s ease-in-out;
+        color: white !important;
+    }
+
+        .x:hover {
+            transform: rotate(180deg);
+            color: white !important;
+        }
+
+        .x:before {
+            transform: rotate(45deg);
+            transform-origin: center;
+        }
+
+        .x:after {
+            transform: rotate(-45deg);
+            transform-origin: center;
+        }
+</style>
+</div>
+<input type="hidden" id="caja_number_po_sa_ed">
+<input type="hidden" id="caja_packing_sa_ed">
+
+<div id="loading_pk_sa_ed" class="load_pk">
+    <div id="spinner" class="imagen_loading2" style=""></div>
+</div>
+
+<div class="container-fluid" style="padding-left:5em; padding-right:3em;">
+    <h2>Edit samples pk</h2><br />
+    <!------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------->
+    <div class="row" style="margin-left: 1em;">
+        <div class="form-group ">
+            <div class="form-group col-sm-3 " id="div_customer_fa">
+                <label for="caja_by_trans" class=" col-form-label">Customer&nbsp;</label><br />
+                <select class="form-control  pk_fa" id="caja_customer_sa_ed">
+                    <option value="1">Mad Engine</option>
+                    <option value="2">Fantasy</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-3 " id="div_shipto_sa_ed"></div>
+            <div class="form-group col-sm-3 " id="div_driver_sa_ed">
+                <label for="caja_by_trans" class=" col-form-label">Driver&nbsp;</label><br />
+                <select class="form-control js-example-basic-single conductores_sa_ed pk_fa_ed" id="caja_conductor_pk_sa_ed"></select>
+            </div>
+            <div class="form-group col-sm-3 " id="div_container_fa" style="padding: 0;">
+                <label for="caja_by_trans" class=" col-form-label">Container&nbsp;</label><br />
+                <select class="form-control js-example-basic-single contenedores_sa_ed pk_fa_ed" id="caja_contenedor_pk_sa_ed"></select>
+            </div>
+        </div>
+    </div>
+    <div class="row" style="margin-left: 1em;">
+        <div class="form-group ">
+            <div class="form-group col-sm-3 ">
+                <label for="caja_by_trans" class=" col-form-label pk">Seal </label>
+                <input type="text" class="form-control numeric pk_fa_ed" maxlength="10" id="caja_seal_pk_sa_ed">
+            </div>
+            <div class="form-group col-sm-3 ">
+                <label for="caja_by_trans" class=" col-form-label pk ">Replacement</label>
+                <input type="text" class="form-control validacion pk_fa" maxlength="50" id="caja_replacement_pk_sa_ed">
+            </div>
+            <div class="form-group col-sm-3" style="">
+                <label for="caja_by_trans" class=" col-form-label pk">Type</label>
+                <select id="caja_tipo_pk_fa" class="form-control pk_fa_ed">
+                    <option value="2">OTHER</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-3" style="padding-left:0px;">
+                <label for="caja_num_envio" class=" col-form-label pk">Ship #</label>
+                <select class="form-control  pk_fa_ed" id="caja_num_envio_sa_ed">
+                    <option>1</option>
+                    <option>2</option>
+                    <option>3</option>
+                    <option>4</option>
+                    <option>5</option>
+                    <option>6</option>
+                    <option>7</option>
+                    <option>8</option>
+                    <option>9</option>
+                    <option>10</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="row" id="div_pedido_dropdown_sa_ed" style="margin:0px;padding:0px;margin-left:1em;">
+        <div class="form-group col-sm-3 ">
+            <label for="caja_by_trans" class=" col-form-label">Styles by order</label><br />
+            <select class="form-control js-example-basic-single pedidos_sa_ed" id="caja_pedido_estilo_sa_ed"></select>
+        </div>
+    </div>
+      
+    <div class="" id="div_estilos_sa_ed" style="visibility:hidden;margin:0px; margin-left: 1em !important;">
+        <h4 style="padding-left:3em;">Styles</h4>
+        <table id="" class="fold-table table table-striped table-hover " style="margin:0px;">
+            <thead style="background:#3479bf; color:white;">
+                <tr><th style=" width:5%;">#</th><th style=" width:24%;">Style</th><th style=" width:26%;">Description</th><th style=" width:24%;">Color</th></tr>
+            </thead>
+        </table>
+        <div style="overflow:auto; height:250px;">
+            <table id="tabla_estilos_sa_ed" class="fold-table table table-striped table-hover " style="">
+                <tbody class="rows_estilos_sa_ed"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="form-group">
+            <div class="form-group col-sm-2 " style="margin-left:1em; ">
+                <br />
+                <button type="button" title="Add new style" class="btn btn-success mb-2" id="boton_agregar" onclick="agregar_estilo_nuevo_e()" style="">+Style</button>
+                <button type="button" title="Add new column" class="btn btn-success mb-2" id="boton_agregar" onclick="agregar_columna()" style="">+Column</button>
+                <!--<button type="button" title="Add sizes in header" class="btn btn-success mb-2" id="boton_agregar" onclick="agregar_columna()" style="">Sizes</button>-->
+            </div>
+          
+        </div>
+    </div>
+
+    <div id="div_tabla_nuevos_estilos_e" class="row" style="visibility:hidden; margin-left:1em; ">
+        <center><h4>New styles</h4></center>
+        <table id="tabla_nuevos_estilos_e" class="fold-table table table-striped table-hover ">
+            <thead class="cabecera_tabla_nuevos_estilos_e" style="background:#3479bf; color:white;">
+                <tr><th>#</th><th>PO</th><th>STYLE</th><th>COLOR</th><th>DESCRIPTION</th><th>ORIGIN</th><th>%</th><th>GENDER</th><th></th><th></th></tr>
+            </thead>
+            <tbody class="rows_tabla_nuevos_estilos_e"></tbody>
+        </table>
+        <button type="button" title="Save" class="btn btn-primary mb-2" id="boton_guardar_p" onclick="revisar_informacion_pk_dir_ed_e(event)" style="float:right; margin:1em; margin-right:5em;">Save</button>
+    </div>
+
+
+    <div id="div_tabla_temporal_sa_ed" class="row" style="visibility:hidden;margin:0px;padding:0px; margin-left:1em;">
+        <h4 style="padding-left:3em;">Selected styles</h4><br />
+        <table id="tabla_temporal_sa_ed" class="fold-table table table-striped table-hover ">
+            <thead class="cabecera_tabla_temporal_sa_ed" style="background:#3479bf; color:white; border:none;">
+                <tr><th></th><th></th><th>B - BIG</th><th>1XL</th><th>2XL</th><th>3XL</th><th>4XL</th><th>5XL</th><th>6XL</th><th>7XL</th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
+                <tr><th></th><th></th><th>C - TODDLER GIRLS</th><th>2T</th><th>3T</th><th>4T</th><th>5T</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
+                <tr><th></th><th></th><th>D - TODDLER BOYS </th><th>2T</th><th>3T</th><th>4T</th><th>5T</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
+                <tr><th></th><th></th><th>F - MISSY </th><th>XS</th><th>SM</th><th>MD</th><th>LG</th><th>XL</th><th>2XL</th><th>3XL</th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
+                <tr><th></th><th></th><th>G - JUNIOR</th><th>XS</th><th>SM</th><th>MD</th><th>LG</th><th>XL</th><th>2XL</th><th>3XL</th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
+                <tr><th></th><th></th><th>I - INFANT </th><th>NB</th><th>3M</th><th>6M</th><th>9M</th><th>12M</th><th>18M</th><th>24M</th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
+                <tr><th></th><th></th><th>J - LITTLE BOYS </th><th>04</th><th>5/6</th><th>7</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
+                <tr><th></th><th></th><th>M - YOUNG MENS </th><th>XS</th><th>SM</th><th>MD</th><th>LG</th><th>XL</th><th>2XL</th><th>3XL</th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
+                <tr><th></th><th></th><th>Q - BIG GIRLS </th><th>XS</th><th>SM</th><th>MD</th><th>LG</th><th>XL</th><th>2XL</th><th>3XL</th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
+                <tr><th></th><th></th><th>R - LITTLE GIRLS</th><th>04</th><th>5/6</th><th>6X</th><th>07</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
+                <tr><th></th><th></th><th>T - TALL </th><th>LT</th><th>1XLT</th><th>2XLT</th><th>3XLT</th><th>4XLT</th><th>5XLT</th><th>6XLT</th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
+                <tr><th></th><th></th><th>W - WOMEN</th><th>XS</th><th>SM</th><th>MD</th><th>LG</th><th>XL</th><th>2XL</th><th>3XL</th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
+                <tr style="font-size:1em; background:#337ab7; color:white;">
+                    <th></th>
+                    <th></th>
+                    <th>STYLE</th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th>BXS</th>
+                    <th>Attn to</th>
+                    <th>Del</th>
+                    <th>Size</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <!--<tbody> id="tabla_temporal_sa_ed_cabecera"
+                        <tr style="visibility:hidden;">
+                            <td style=" color:white; width:1px;vertical-align:middle;">0</td>
+                            <td style="width:1px;vertical-align:middle;color:white; ">0000</td>
+                            <td style="vertical-align:middle;">KPMJ002MSC MJ THRILLER BOX</td>
+                            <td style="vertical-align:middle;"><input style="height: 0.5em;" maxlength="6" class="numeric qty form-control " value="0" /></td>
+                            <td style="vertical-align:middle;"><input style="height: 0.5em;" maxlength="6" class="numeric qty form-control " value="0" /></td>
+                            <td style="vertical-align:middle;"><input style="height: 0.5em;" maxlength="6" class="numeric qty form-control " value="0" /></td>
+                            <td style="vertical-align:middle;"><input style="height: 0.5em;" maxlength="6" class="numeric qty form-control " value="0" /></td>
+                            <td style="vertical-align:middle;"><input style="height: 0.5em;" maxlength="6" class="numeric qty form-control " value="0" /></td>
+                            <td style="vertical-align:middle;"><input style="height: 0.5em;" maxlength="6" class="numeric qty form-control " value="0" /></td>
+                            <td style="vertical-align:middle;"><input style="height: 0.5em;" maxlength="6" class="numeric qty form-control " value="0" /></td>
+                            <td style="vertical-align:middle;"><input style="height: 0.5em;" maxlength="6" class="numeric form-control " value="1" /></td>
+                            <td style="vertical-align:middle;"><input style="height: 0.5em;" maxlength="200" class="validacion form-control " id="" /></td>
+                            <td style="vertical-align:middle;"><button type="button" style="height: 0.5em;" class="btn btn-light "><b>-</b></button></td>
+                        </tr>
+                </tbody>
+            </table>
+            <table id="tabla_temporal_sa_ed" class="fold-table table table-striped table-hover tblnavigate" style="margin-top:-75px;">-->
+            <tbody class="rows_tabla_temporal_sa_ed"></tbody>
+        </table>
+        <button type="button" title="Save" class="btn btn-primary mb-2" id="boton_guardar_pk" onclick="revisar_informacion_pk_sa_ed(event)" style="float:right; margin:1em;">Save</button>
+    </div>
+
+    <!------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------->
+    <br />
+    <a type="button" title="Return" class="btn btn-secondary btn-sm " id="boton_regresar_inventario_fa" href="@Url.Action("Index", "Shipping")" style="float:left; "><span class="glyphicon glyphicon-backward" aria-hidden="true"></span> Back</a>
+</div>
+
+
+<!--<th style="visibility:hidden; width:1px;"></th>
+-->

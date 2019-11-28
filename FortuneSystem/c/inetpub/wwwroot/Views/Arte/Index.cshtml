@@ -1,0 +1,159 @@
+﻿@model IEnumerable<FortuneSystem.IMAGEN_ARTE>
+
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+}
+
+
+
+<script>
+    $(function () {
+        $('img').on('click', function () {
+            $('.enlargeImageModalSource').attr('src', $(this).attr('src'));
+            $('#enlargeImageModal').modal('show');
+        });
+    });
+
+</script>
+
+<style>
+
+    .center {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .edit_driver {
+    }
+
+        .edit_driver:hover {
+            color: white !important;
+            background: #3479bf !important;
+            border-radius: 15px;
+        }
+</style>
+
+@{
+    if (TempData["imagArteOK"] != null)
+    {
+        <script type="text/javascript">
+            alertify.set('notifier', 'position', 'top-right');
+            alertify.notify(@Html.Raw(Json.Encode(TempData["imagArteOK"])), 'success', 5, null);
+
+        </script>
+    }
+
+    if (TempData["imagPnlOK"] != null)
+    {
+        <script type="text/javascript">
+            alertify.set('notifier', 'position', 'top-right');
+            alertify.notify(@Html.Raw(Json.Encode(TempData["imagPnlOK"])), 'success', 5, null);
+
+        </script>
+    }
+
+
+
+}
+</div>
+<div class="container-fluid" style="padding-left:20em; padding-right:10em;">
+    <div class="panel panel-primary">
+        <div class="panel-heading">
+            <h4>
+                ART INVENTORY
+            </h4>
+
+        </div>
+        <br />
+        <table id="tablaArteInventario" class="table table-striped">
+            <thead>
+                <tr>
+                    <th>
+                        @Html.DisplayNameFor(model => model.Estilo)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.DescripcionEstilo)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.imgArte)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.imgPNL)
+                    </th>
+                    <th>ACTIONS</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Estilo)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.DescripcionEstilo)
+                        </td>
+                        <td>
+                            <img width="70" height="70" src="@Url.Action("ConvertirImagen", "Arte", new {arteCodigo = item.IdImgArte})" />
+                        </td>
+                        <td>
+                            <img width="70" height="70" src="@Url.Action("ConvertirImagenPNL", "Arte", new {pnlCodigo= item.IdImgArte})" />
+                        </td>
+                        <td>
+                            <a href="#" class="btn edit_driver edicion_driver btnEdit" data-value="@item.IdImgArte " title="List Art"><span class="glyphicon glyphicon-search " aria-hidden="true" style="padding: 0px !important;"></span></a>
+                            <a href="@Url.Action("FileUpload", "Arte",  new { idArte = item.IdImgArte }) " class="btn edit_driver edicion_driver" Title="Art"> <span class="glyphicon glyphicon-check " aria-hidden="true" style="padding: 0px !important;"></span></a>
+                          
+                        </td>
+
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <br />
+    </div>
+
+    <div class="panel panel-primary">
+        <div class="panel-heading">
+            <h4>
+                LIST ART
+            </h4>
+        </div>
+        <br />
+        <div id="ContenedorModal"></div>
+        <br />
+    </div>
+</div>
+
+    <div class="modal fade" id="enlargeImageModal" tabindex="-1" role="dialog" aria-labelledby="enlargeImageModal" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="exampleModalLabel">ART</h2>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+                </div>
+                <div class="modal-body">
+                    <img class="enlargeImageModalSource center" style="width: 50%;">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <script type="text/javascript">
+        $(document).on('click', '.btnEdit', function () {
+            $("#loading").css('display', 'inline');
+            var id = $(this).data("value");
+            $("#ContenedorModal").load("/Arte/ListaImgArte/" + id, function () {
+                $("#loading").css('display', 'none');
+            });
+        });
+
+
+    </script>

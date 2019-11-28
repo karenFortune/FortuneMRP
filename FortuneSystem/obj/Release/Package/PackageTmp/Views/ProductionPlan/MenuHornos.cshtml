@@ -1,0 +1,88 @@
+﻿
+@{
+    ViewBag.Title = "Catalogs";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    .img-fluid {
+    max-width: 100%;
+    height: auto;
+}
+</style>
+<script>
+
+</script>
+</div>
+<div class="container-fluid" style="padding-left:8em; padding-right:2em;">
+    <p>
+        <button id="view-fullscreen">Fullscreen</button>
+        <button id="cancel-fullscreen">Cancel fullscreen</button>
+    </p>
+    <div class="panel panel-primary" id="catalagoGrl">
+        <div class="panel-heading">
+            <h2 style="text-align:center">	OVEN MACHINE CATALAG	</h2>
+        </div>
+        <br />
+        <br />
+        <div class="contendorCatal" style="padding-left:2em; padding-right:2em; border:0px solid #337ab7; ">
+            <div class="row">
+                @if ((int)Session["idCargo"] == 1)
+                {
+
+                    <div class="col-lg-4" style="border:0px solid #337ab7;">
+                   
+                            <a href="@Url.Action("Index", "tallas")" style=""> <img width="400" height="245" class="rounded-circle img-fluid" alt="OVEN-1" src="~/Content/img/Hornos/ov1-sprint.jpg"></a>
+                       
+                    </div><!-- /.col-lg-4 -->
+                    <div class="col-lg-4" style="border:0px solid #337ab7;">
+                        
+                            <a href="@Url.Action("Index", "tallas")" style=""> <img width="400" height="245" class="rounded-circle img-fluid" alt="OVEN-2" src="~/Content/img/Hornos/ov2-sprint.jpg"></a>
+                       
+                    </div><!-- /.col-lg-4 -->
+                    <div class="col-lg-4" style="border:0px solid #337ab7;">
+                      
+                            <a href="@Url.Action("Index", "tallas")" style=""> <img width="400" height="245" class="rounded-circle img-fluid" alt="OVEN-3" src="~/Content/img/Hornos/ov3-sprint.jpg"></a>
+                        
+
+                    </div><!-- /.col-lg-4 -->
+
+                }
+            </div>
+            <br /> <br />
+            <div class="row">
+                @if ((int)Session["idCargo"] == 1)
+                {
+                    <div class="col-lg-4" style="border:0px solid #337ab7;">
+                       
+                            <a href="@Url.Action("Index", "tallas")" style=""> <img width="400" height="245" class="rounded-circle img-fluid" alt="OVEN-4" src="~/Content/img/Hornos/ov4-sprint.jpg"></a>
+                       
+                    </div><!-- /.col-lg-4 -->
+                    <div class="col-lg-4" style="border:0px solid #337ab7;">
+                       
+                            <a href="@Url.Action("Index", "tallas")" style=""> <img width="400" height="245" class="rounded-circle img-fluid" alt="OVEN-5" src="~/Content/img/Hornos/ov5-sprint.jpg"></a>
+                       
+                    </div><!-- /.col-lg-4 -->
+                    <div class="col-lg-4" style="border:0px solid #337ab7;">
+                      
+                            <a href="@Url.Action("Index", "tallas")" style=""> <img width="400" height="245" class="rounded-circle img-fluid" alt="OVEN-6" src="~/Content/img/Hornos/ov6-sprint.jpg"></a>
+                       
+                        <!-- <h2 style="padding-left: 35%;">OVEN 6</h2> -->
+
+                    </div><!-- /.col-lg-4 -->
+                }
+            </div>
+            <div class="row">
+                <div class="col-lg-4">
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+
+    $(document).on("click", "a", function () {
+        $("#loading").show();
+    });
+</script>
+

@@ -1,0 +1,630 @@
+﻿@model FortuneSystem.Models.ProductionPlan.ProductionPlanning
+
+@{
+	ViewBag.Title = "Style PO";
+	Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link type="text/css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsgrid/1.5.3/jsgrid.min.css" />
+<link type="text/css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsgrid/1.5.3/jsgrid-theme.min.css" />
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jsgrid/1.5.3/jsgrid.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script>window.jQuery || document.write(decodeURIComponent('%3Cscript src="js/jquery.min.js"%3E%3C/script%3E'))</script>
+<!-- DevExtreme themes -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cldrjs/0.4.4/cldr.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cldrjs/0.4.4/cldr/event.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cldrjs/0.4.4/cldr/supplemental.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cldrjs/0.4.4/cldr/unresolved.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/globalize/1.1.1/globalize.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/globalize/1.1.1/globalize/message.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/globalize/1.1.1/globalize/number.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/globalize/1.1.1/globalize/currency.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/globalize/1.1.1/globalize/date.min.js"></script>
+<!--<link rel="stylesheet" type="text/css" href="https://cdn3.devexpress.com/jslib/19.2.3/css/dx.common.css" />
+<link rel="stylesheet" type="text/css" href="https://cdn3.devexpress.com/jslib/19.2.3/css/dx.light.css" />
+<script src="https://cdn3.devexpress.com/jslib/19.2.3/js/dx.all.js"></script>
+<link rel="stylesheet" type="text/css" href="~/Content/dx.common.css" />
+<link rel="stylesheet" type="text/css" href="~/Content/dx.light.css" />
+	<script type="text/javascript" src="~/Scripts/dx.all.js"></script>-->
+<!-- DevExtreme library -->
+
+<link rel="stylesheet" type="text/css" href="~/Content/dx.common.css" />
+<link rel="stylesheet" type="text/css" href="~/Content/dx.light.css" />
+
+
+<script type="text/javascript" src="~/Scripts/dx.all.js"></script>
+
+<!-- Sistema -->
+<script src="~/Scripts/general/infoProdPlan.js"></script>
+<script src="~/Scripts/general/date.format.js"></script>
+<script src="~/Scripts/general/dataPlanning.js"></script>
+<link rel="stylesheet" type="text/css" href="~/Content/cssGeneral/stylesPlan.css" />
+<script src="~/Scripts/general/dataProdPlan.js"></script>
+<!--<link type="text/css" href="~/Content/cssGeneral/estiloRadioButtonPrintS.css" rel="stylesheet" />-->
+
+<script src="~/Content/datetimepicker-master/jquery.datetimepicker.js"></script>
+<script src="~/Content/datetimepicker-master/build/jquery.datetimepicker.full.min.js"></script>
+<link rel="stylesheet" type="text/css" href="~/Content/datetimepicker-master/build/jquery.datetimepicker.min.css" />
+
+<style>
+	tr.highlighted td {
+		background: #b3e0ff;
+	}
+
+	.table-responsive {
+		overflow: visible !important
+	}
+
+	input[type=number] {
+		width: 50%;
+		text-align: center;
+	}
+
+	input.numeric {
+		width: 50%;
+		text-align: center;
+	}
+
+	input.number {
+		width: 50%;
+		text-align: center;
+	}
+
+	/*th, td {
+		border: 1px solid blue;
+		width: 100px;
+		word-wrap: break-word;
+	}
+	*/
+	#guardarBatch {
+		margin-left: 1000px;
+		margin-top: 1px;
+		width: 100px;
+		height: 40px;
+		border: none;
+		font-size: 20px;
+		font-weight: 600;
+	}
+
+	#registrarNuevo {
+		margin-left: 50px;
+		margin-top: 1px;
+		width: 170px;
+		height: 40px;
+		border: none;
+		font-size: 15px;
+		font-weight: 600;
+	}
+
+	#modificarBatch {
+		margin-left: 750px;
+		margin-top: 1px;
+		width: 120px;
+		height: 40px;
+		border: none;
+		font-size: 20px;
+		font-weight: 600;
+	}
+
+	#detailsPack {
+		margin-left: 10px;
+		margin-top: 1px;
+		width: 210px;
+		height: 40px;
+		border: none;
+		font-size: 20px;
+		font-weight: 600;
+	}
+
+	input.txtDes {
+		background-color: transparent;
+		border: 0px;
+		outline: none;
+		-webkit-box-shadow: none;
+		-moz-box-shadow: none;
+		box-shadow: none;
+		width: 50%;
+		text-align: center;
+	}
+
+
+
+	.center {
+		display: block;
+		margin-left: auto;
+		margin-right: auto;
+		width: 60%;
+		height: 25%;
+	}
+
+	.tImagen {
+		text-align: center;
+		font-size: 20px;
+	}
+
+	#flecha {
+		cursor: auto;
+	}
+
+
+	#pie {
+		height: 500px;
+	}
+
+	.letrero {
+		font-family: impact, sans-serif;
+		font-size: 3em;
+		text-align: center;
+		letter-spacing: 3.8pt;
+		color: #2f77b5;
+	}
+
+	.edit_driver {
+	}
+
+		.edit_driver:hover {
+			color: white !important;
+			background: #3479bf !important;
+			border-radius: 15px;
+		}
+
+	#tamModal {
+		width: 90% !important;
+	}
+
+
+</style>
+<script>
+
+	$(function () {
+		$("#QCReport_Fecha").datepicker();
+		$("#Fecha").datepicker();
+
+		       //Lista de Planeacion
+            var planningData = new DevExpress.data.CustomStore({
+                loadMode: "raw",
+                load: function (loadOptions) {
+					var d = $.Deferred();
+					//var periodo = $("#selectYear option:selected").val();
+                    $.ajax({
+                        type: 'GET',
+                        url: "/WIP/ListadoPedido",
+                        dataType: "json",
+                        success: function (data) {
+                            d.resolve(data);
+                        },
+                        error: function (e) {
+                            alert("error: " + e.responseText);
+                        }
+                    });
+                    return d.promise();
+                },
+                update: function (key, values) {
+                    var d = $.Deferred();
+                    var idSummary = key.InfoSummary.IdItems;
+                  /*  if (values.InfoSummary !== undefined) {
+                        if (values.InfoSummary.FechaUCC !== null) {
+                            RegistrarFechaUCC(d, values, idSummary);
+                        }
+                    } else if (values.CatComentarios !== undefined) {
+                        if (values.CatComentarios.Comentario !== null) {
+                            var tipoArchivo = "WIP";
+                            RegistrarComentario(key, d, values, idSummary, tipoArchivo);
+                        }
+                    }*/
+                    return d.promise();
+                }
+            });
+	})
+
+
+	$(document).ready(function () {
+
+
+
+		$('#Fecha2').datetimepicker({
+			datepicker: false,
+			format: 'H:i'
+		});
+		$('#fechasp').datetimepicker({
+			datepicker: false,
+			format: 'H:i'
+		});
+
+		//Autocomplete codigo de color
+		$("#PO").autocomplete({
+			source: function (request, response) {
+				$.ajax({
+					url: "/ProductionPlan/Autocomplete_PO",
+					type: "POST",
+					dataType: "json",
+					data: { keyword: request.term },
+					success: function (data) {
+						response($.map(data, function (item) {
+							return {
+								label: item.PO,
+								value: item.IdPedido,
+								po: item.orden,
+								id: item.IdPedido
+							};
+						}));
+					},
+					error: function () {
+					}
+				});
+			},
+			select: function (event, ui) {
+
+
+			},
+			minLength: 1,
+			autoSelect: true,
+			autoFocus: true,
+			response: function (event, ui) {
+				if (!ui.content.length) {
+					var alert = alertify.alert("Message", 'No color results found.').set('label', 'Aceptar');
+					alert.set({ transition: 'zoom' });
+					alert.set('modal', false);
+					//$("#nuevoColor").removeClass("btn btn-success");
+					//$("#nuevoColor").addClass("btn btn-danger");
+					//$("#nuevoItem").prop("disabled", true);
+				}
+			}
+		});
+	});
+
+
+
+
+</script>
+@{
+	if (TempData["eliminarBatch"] != null)
+	{
+		<script type="text/javascript">
+            alertify.set('notifier', 'position', 'top-right');
+            alertify.notify(@Html.Raw(Json.Encode(TempData["eliminarBatch"])), 'success', 5, null);
+
+		</script>
+	}
+}
+</div>
+<!-- Modal Planeacion-->
+<div class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered modal-lg" id="tamModal" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h2 class="modal-title" id="exampleModalCenterTitle">PLANNING</h2>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+			<div class="modal-body">
+				<div class="table-responsive-sm">
+					<table id="tableGeneralPlan" class="table table-sm table-striped table-hover ">
+						<thead class="encabezado"></thead>
+						<tbody class="tbodysGenPlan"></tbody>
+					</table>
+				</div>
+				<div id="contenedorEdit" style="padding-left:1em; display:none;" >
+					<div class="container-fluid">
+						<div class="form-row">
+							<div class="form-group col-md-3">
+								@Html.LabelFor(model => model.TurnosAct, htmlAttributes: new { @class = "control-label " })
+								@Html.EnumDropDownListFor(model => model.TurnosAct, "Select Shift", new { @class = "form-control" })
+								@Html.ValidationMessageFor(model => model.TurnosAct, "", new { @class = "text-danger" })
+							</div>
+							<div class="form-group col-md-3">
+								@Html.LabelFor(model => model.FechaAct, htmlAttributes: new { @class = "control-label " })
+								@Html.EditorFor(model => model.FechaAct, new { htmlAttributes = new { @class = "form-control date-picker nuevo_plan" } })
+								@Html.ValidationMessageFor(model => model.FechaAct, "", new { @class = "text-danger" })
+							</div>
+							<div class="form-group col-md-3">
+								@Html.LabelFor(model => model.IdHorno, htmlAttributes: new { @class = "control-label " }) <br />
+								@Html.DropDownList("listHornos", (IEnumerable<System.Web.Mvc.SelectListItem>)ViewData["listHornos"], new { @class = "form-control nuevo_plan", @id = "selectHornoAct", @name = "state" })
+								@Html.ValidationMessageFor(model => model.IdHorno, "", new { @class = "text-danger" })
+							</div>
+							<div id="datosMaqAct" class="form-group col-md-3" >
+								@Html.LabelFor(model => model.IdProdOverMachine, htmlAttributes: new { @class = "control-label " }) <br />
+
+								<select id="selectMachineAct" name="selectMachine">
+									<option value="">Select an Machine</option>
+								</select>
+								@Html.ValidationMessageFor(model => model.IdProdOverMachine, "", new { @class = "text-danger" })
+							</div>
+
+						</div>
+
+					</div>
+					<div id="contenedorDatosAct" >
+						<div class="container-fluid">
+							<div class="form-row">
+								<div id="datosPOAct" class="form-group col-md-3">
+									@Html.LabelFor(model => model.IdPedido, htmlAttributes: new { @class = "control-label " }) <br />
+									@Html.DropDownList("listPO", (IEnumerable<System.Web.Mvc.SelectListItem>)ViewData["listPO"], new { @class = "form-control nuevo_plan", @id = "selectPosProdAct", @name = "state" })
+									@Html.ValidationMessageFor(model => model.IdPedido, "", new { @class = "text-danger" })
+								</div>
+								<div id="contenedorDatos2Act">
+									<div class="form-group col-md-3">
+										@Html.LabelFor(model => model.IdSummary, htmlAttributes: new { @class = "control-label " }) <br />
+										<select id="selectEstilosProdAct" name="selectEstilosProdAct">
+											<option value="">Select a Style</option>
+										</select>
+										@Html.ValidationMessageFor(model => model.IdSummary, "", new { @class = "text-danger" })
+									</div>
+									<div class="form-group col-md-3">
+										@Html.LabelFor(model => model.PrioridadesAct, htmlAttributes: new { @class = "control-label " })
+										@Html.EnumDropDownListFor(model => model.PrioridadesAct, "Select a Priority", new { @class = "form-control" })
+										@Html.ValidationMessageFor(model => model.PrioridadesAct, "", new { @class = "text-danger" })
+									</div>
+									<div class="form-group col-md-3">
+										@Html.LabelFor(model => model.Estatus, htmlAttributes: new { @class = "control-label " })
+										@Html.EnumDropDownListFor(model => model.Estatus, "Select a State", new { @class = "form-control" })
+										@Html.ValidationMessageFor(model => model.Estatus, "", new { @class = "text-danger" })
+									</div>
+								</div>
+
+							</div>
+						</div>
+						<div id="contenedorDatosPersonalAct" >
+							<div class="container-fluid">
+								<div class="form-row">
+									<div class="form-group col-md-3">
+										@Html.LabelFor(model => model.MetedorAct, htmlAttributes: new { @class = "control-label " })
+										@Html.EditorFor(model => model.MetedorAct, new { htmlAttributes = new { @class = "form-control nuevo_plan", @style = "text-transform:uppercase" } })
+										@Html.ValidationMessageFor(model => model.MetedorAct, "", new { @class = "text-danger" })
+									</div>
+									<div class="form-group col-md-3">
+										@Html.LabelFor(model => model.SacadorAct, htmlAttributes: new { @class = "control-label " })
+										@Html.EditorFor(model => model.SacadorAct, new { htmlAttributes = new { @class = "form-control nuevo_plan", @style = "text-transform:uppercase" } })
+										@Html.ValidationMessageFor(model => model.SacadorAct, "", new { @class = "text-danger" })
+									</div>
+									<div class="form-group col-md-3">
+										@Html.LabelFor(model => model.CachadorAct, htmlAttributes: new { @class = "control-label " })
+										@Html.EditorFor(model => model.CachadorAct, new { htmlAttributes = new { @class = "form-control nuevo_plan", @style = "text-transform:uppercase" } })
+										@Html.ValidationMessageFor(model => model.CachadorAct, "", new { @class = "text-danger" })
+									</div>
+								</div>
+							</div>
+							<div class="container-fluid">
+								<div class="form-row">
+
+								</div>
+							</div>
+							<div class="container-fluid">
+								<div class="text-center margin-bottom col-sm-12">
+									<button type="button" class="btn btn-success" id="modificarPlaneacion" onclick="actualizarPlaneacion();" data-toggle="modal">
+										<span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span> Modify
+									</button>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary btnCancel" data-dismiss="modal">Close</button>
+				</div>
+			</div>
+	</div>
+</div>
+<div class="container-fluid" style="padding-left:6em; padding-right:5em;">
+	<div class="letrero">PRODUCTION PLANNING</div>
+
+
+	<div class="row" style="display:inline;" id="panelReport">
+		<div class="col-sm-13">
+			<div class="panel panel-primary" id="datosReporte" style="visibility:visible;  height: 400px; ">	<!--height: 1800px;-->
+				<div class="panel-heading">
+					<h4>REGISTRATION</h4>
+					@Html.HiddenFor(model => model.IdProductionPlan)
+
+				</div>
+
+				<div id="turn1" style="padding-left:1em;">
+					<h3></h3>
+					<div class="container-fluid">
+						<div class="form-row">
+							<div class="form-group col-md-4">
+								<div id="BotonesDepartamentos" style="display:inline; text-align:center">
+									<button type="button" class="btn btn-primary btn-md pull-left " id="detailsPlan" onclick="TablaPlaneacion();"><span class="glyphicon glyphicon-pushpin" aria-hidden="true"></span> Planning Details</button>
+								</div>
+							</div>
+
+						</div>
+					</div>
+					<div class="container-fluid">
+						<div class="form-row">
+							<div class="form-group col-md-3">
+								@Html.LabelFor(model => model.Turnos, htmlAttributes: new { @class = "control-label " })
+								@Html.EnumDropDownListFor(model => model.Turnos, "Select Shift", new { @class = "form-control" })
+								@Html.ValidationMessageFor(model => model.Turnos, "", new { @class = "text-danger" })
+							</div>
+							<div class="form-group col-md-3">
+								@Html.LabelFor(model => model.Fecha, htmlAttributes: new { @class = "control-label " })
+								@Html.EditorFor(model => model.Fecha, new { htmlAttributes = new { @class = "form-control date-picker nuevo_plan" } })
+								@Html.ValidationMessageFor(model => model.Fecha, "", new { @class = "text-danger" })
+							</div>
+							<div class="form-group col-md-3">
+								@Html.LabelFor(model => model.IdHorno, htmlAttributes: new { @class = "control-label " }) <br />
+								@Html.DropDownList("listHornos", (IEnumerable<System.Web.Mvc.SelectListItem>)ViewData["listHornos"], new { @class = "form-control nuevo_plan", @id = "selectHorno", @name = "state" })
+								@Html.ValidationMessageFor(model => model.IdHorno, "", new { @class = "text-danger" })
+							</div>
+							<div id="datosMaq" class="form-group col-md-3" style="display:none">
+								@Html.LabelFor(model => model.IdProdOverMachine, htmlAttributes: new { @class = "control-label " }) <br />
+
+								<select id="selectMachine" name="selectMachine">
+									<option value="">Select an Machine</option>
+								</select>
+								@Html.ValidationMessageFor(model => model.IdProdOverMachine, "", new { @class = "text-danger" })
+							</div>
+
+						</div>
+
+					</div>
+					<div id="contenedorDatos" style="display:none;">
+						<div class="container-fluid">
+							<div class="form-row">
+								<div id="datosPO" class="form-group col-md-3" style="display:none">
+									@Html.LabelFor(model => model.IdPedido, htmlAttributes: new { @class = "control-label " }) <br />
+									@Html.DropDownList("listPO", (IEnumerable<System.Web.Mvc.SelectListItem>)ViewData["listPO"], new { @class = "form-control nuevo_plan", @id = "selectPosProd", @name = "state" })
+									@Html.ValidationMessageFor(model => model.IdPedido, "", new { @class = "text-danger" })
+								</div>
+								<div id="contenedorDatos2" style="display:none;">
+									<div class="form-group col-md-3">
+										@Html.LabelFor(model => model.IdSummary, htmlAttributes: new { @class = "control-label " }) <br />
+										<select id="selectEstilosProd" name="selectEstilosProd">
+											<option value="">Select a Style</option>
+										</select>
+										@Html.ValidationMessageFor(model => model.IdSummary, "", new { @class = "text-danger" })
+									</div>
+									<div class="form-group col-md-3">
+										@Html.LabelFor(model => model.Prioridades, htmlAttributes: new { @class = "control-label " })
+										@Html.EnumDropDownListFor(model => model.Prioridades, "Select a Priority", new { @class = "form-control" })
+										@Html.ValidationMessageFor(model => model.Prioridades, "", new { @class = "text-danger" })
+									</div>
+								</div>
+
+							</div>
+						</div>
+						<div id="contenedorDatosPersonal" style="display:none;">
+							<div class="container-fluid">
+								<div class="form-row">
+									<div class="form-group col-md-3">
+										@Html.LabelFor(model => model.Metedor, htmlAttributes: new { @class = "control-label " })
+										@Html.EditorFor(model => model.Metedor, new { htmlAttributes = new { @class = "form-control nuevo_plan", @style = "text-transform:uppercase" } })
+										@Html.ValidationMessageFor(model => model.Metedor, "", new { @class = "text-danger" })
+									</div>
+									<div class="form-group col-md-3">
+										@Html.LabelFor(model => model.Sacador, htmlAttributes: new { @class = "control-label " })
+										@Html.EditorFor(model => model.Sacador, new { htmlAttributes = new { @class = "form-control nuevo_plan", @style = "text-transform:uppercase" } })
+										@Html.ValidationMessageFor(model => model.Sacador, "", new { @class = "text-danger" })
+									</div>
+									<div class="form-group col-md-3">
+										@Html.LabelFor(model => model.Cachador, htmlAttributes: new { @class = "control-label " })
+										@Html.EditorFor(model => model.Cachador, new { htmlAttributes = new { @class = "form-control nuevo_plan", @style = "text-transform:uppercase" } })
+										@Html.ValidationMessageFor(model => model.Cachador, "", new { @class = "text-danger" })
+									</div>
+								</div>
+							</div>
+							<div class="container-fluid">
+								<div class="form-row">
+
+								</div>
+							</div>
+							<div class="container-fluid">
+								<div class="text-center margin-bottom col-sm-12">
+									<button type="button" class="btn btn-success" id="nuevaPlaneacion" onclick="registrarPlaneacion();" data-toggle="modal">
+										<span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span> Save
+									</button>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div id="contenedorEstilos" style="display:none;">
+						<!--<div class="container-fluid">
+				<h2>Styles</h2>
+
+					<div class="table-responsive-xl">
+						<table class="table  table-striped table-bordered" id="tablaMaquinas">
+							<thead>
+								<tr>
+									<th style="text-align:center"># MACHINE</th>
+									<th style="text-align:center">STYLE</th>
+									<th style="text-align:center">DATE</th>
+									<th style="text-align:center">METEDOR</th>
+									<th style="text-align:center">SACADOR</th>
+									<th style="text-align:center">CACHADOR</th>
+								</tr>
+							</thead>
+							<tbody class="tbodyMaq"></tbody>
+						</table>
+					</div>
+
+			</div>-->
+						<div class="container-fluid">
+							<div class="text-center margin-bottom col-sm-12">
+								<button type="button" class="btn btn-success" id="nuevaPlaneacion" onclick="registrarPlaneacion();" data-toggle="modal" disabled>
+									<span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span> Save
+								</button>
+								<button type="button" class="btn btn-success" id="modificarPlaneacion" onclick="actualizarPlaneacion();" data-toggle="modal">
+									<span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span> Modify
+								</button>
+							</div>
+						</div>
+					</div>
+
+					<!--<div class="dx-viewport demo-container">
+			<div class="long-title"><h3>PLANNING</h3></div>
+			<div id="scheduler"></div>
+		</div>
+
+		<div class="demo-container">
+			<div class="long-title"><h3>DXCinema Show Times</h3></div>
+			<div id="scheduler"></div>
+
+		</div>-->
+
+
+				</div>
+
+
+				<br />
+
+
+
+			</div>
+		</div>
+
+	</div>
+	<br />
+	<br />
+	<br />
+
+
+
+	<script>
+		$(document).on("click", ".btnCancel", function () {
+		window.location.reload();
+		$("#loading").css('display', 'inline');
+        });
+
+
+		$('.tbodyMisp').keydown(function (e) {
+			var $table = $(this);
+			var $active = $('input:focus,select:focus', $table);
+			var $next = null;
+			var focusableQuery = 'input:visible,select:visible,textarea:visible';
+			var position = parseInt($active.closest('td').index()) + 1;
+			switch (e.keyCode) {
+				case 37:
+					$next = $active.parent('td').prev().find(focusableQuery);
+					break;
+				case 38:
+					$next = $active
+						.closest('tr')
+						.prev()
+						.find('td:nth-child(' + position + ')')
+						.find(focusableQuery);
+					break;
+				case 39:
+					$next = $active.closest('td').next().find(focusableQuery);
+					break;
+				case 40:
+					$next = $active
+						.closest('tr')
+						.next()
+						.find('td:nth-child(' + position + ')')
+						.find(focusableQuery);
+					break;
+			}
+			if ($next && $next.length) {
+				$next.focus();
+			}
+		});
+
+
+
+
+
+	</script>

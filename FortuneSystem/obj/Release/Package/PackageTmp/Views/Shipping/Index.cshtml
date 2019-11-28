@@ -1,0 +1,3724 @@
+﻿@{
+    ViewBag.Title = "SHIPPING";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/Content/base_m.css" rel="stylesheet" />
+<script src="~/Content/Chart.js-master/Chart.bundle.js"></script>
+<script src="~/Content/Chart.js-master/Chart.bundle.min.js"></script>
+<script src="~/Content/Chart.js-master/Chart.min.js"></script>
+<script src="~/Content/Chart.js-master/moment.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+<link href="~/Content/base_m.css" rel="stylesheet" />
+<script>
+    var tallas_extras, departamento_usuario;
+    departamento_usuario=@ViewBag.departamento;
+    var dc, rows_stock;
+    var tipo_packing;
+    var id_pk_usar;
+    var estilos_fantasy_lista;
+    $(document).ready(function () {
+        $("#load_shipping").css('display', 'inline');
+        //obtener_pos('');
+        obtener_drivers();
+        id_pk_usar = 0;
+        obtener_carriers();
+        obtener_contenedores_edicion();
+        obtener_conductores_edicion();
+        obtener_direcciones_edicion();
+        obtener_direcciones_pk();
+        obtener_direcciones();
+        obtener_pks('');
+        dc = 0; tipo_packing = 0;
+        estilos_fantasy_lista = '';
+        rows_stock = 0;
+        cargar_estilos_ordenes_stock();
+        llenar_years();
+        //$("#load_shipping").css('display', 'none');
+    });
+    var tipo_packing = 0;
+    //VALIDACIONES
+    $(document).on("input", ".numeric", function () {
+        this.value = this.value.replace(/\D/g, '');
+    });
+    $(document).on("input", ".validacion", function () {
+        var c = this.selectionStart,
+            r = /[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ .()&!@@/#%-]/,
+            v = $(this).val();
+        if (r.test(v)) {
+            $(this).val(v.replace(r, ''));
+            c--;
+        }
+        this.setSelectionRange(c, c);
+    });
+
+    $("a").on('click', function () {
+        $("#loading").css('display','none');
+    });
+    //INICIO
+    function busqueda_pk() {
+        if (event.keyCode == 13) {
+            obtener_pks($("#caja_buscar_pk").val());
+        }
+    }
+
+    function obtener_pks(busqueda) {
+        if ($("#caja_buscar_pk").val() == "") {
+            busqueda = 0;
+        } else {
+            busqueda = $("#caja_buscar_pk").val();
+        }
+        $("#load_shipping").css('display', 'inline');
+        $.ajax({
+            url: "/Shipping/buscar_pk_tabla",
+            data: "{'busqueda':'" + busqueda + "'}",
+            type: "POST",
+            contentType: "application/json;charset=utf-8",
+            dataType: "json",
+            success: function (result) {
+                var html = ''; var faltan_ids = 0;
+                $.each(result, function (key, item) {
+                    if (item.id_packing_list != 0) {
+                        html += '<tr>';
+                        html += '<td style="width:5%;">' + item.id_packing_list + '</td>';
+                        if (item.packing != 'NOT ASIGNED') {
+                            var tempo = (item.packing).split('-');
+                            html += '<td style="width:40%;">' + tempo[0] + ' ' + item.nombre_archivo + '</td>';
+                        } else {
+                            html += '<td style="width:40%;">' + item.packing + ' ' + item.nombre_archivo + '</td>';
+                        }
+                        //html += '<td style="width:10%;">' + item.nombre_archivo + '</td>';
+                        html += '<td style="width:10%;">' + item.fecha + '</td>';
+                        html += '<td style="width:20%;">' + item.customer_po + '</td>';
+                        if (departamento_usuario == 6 || departamento_usuario == 1) {
+                            if (item.packing != 'NOT ASIGNED') {
+                                html += '<td style="width:5%;"><button type="button" title="Delete PK id"  class="btn edit_driver edicion" onclick="borrar_pk( \'' + item.id_packing_list + '*' + item.id_tipo + '\')" style="padding: 0em 0.3em !important;  background:none; color:#3479bf; font-weight: bolder; " > <span class="glyphicon glyphicon-erase" aria-hidden="true"  style="padding 0px !important;"></span> </button></td>';
+                            } else {
+                                html += '<td style="width:5%;"><button type="button" title="Add PK id"  class="btn edit_driver edicion" onclick="cambiar_pk( \'' + item.id_packing_list + '*' + item.id_tipo + '\')" style="padding: 0em 0.3em !important;  background:none; color:#3479bf; font-weight: bolder; " > <span class="glyphicon glyphicon-pencil" aria-hidden="true"  style="padding 0px !important;"></span> </button></td>';
+                            }
+                        } else {
+                            html += '<td style="width:5%;"></td>';
+                        }
+                        html += '<td style="width:5%;"><button type="button" title="Print Bill Of Loading"  class="btn edit_driver edicion_driver" onclick="ver_bol(' + item.id_packing_list + ')" style="padding: 0em 0.3em !important;  background:none; color:#3479bf; font-weight: bolder; " > <span class="glyphicon glyphicon-print" aria-hidden="true"  style="padding 0px !important;"></span> </button></td>';
+                        if (departamento_usuario == 6 || departamento_usuario == 1) {
+                            if (item.id_tipo == 3 || item.id_tipo == 8) {
+                                html += '<td style="width:5%;"></td>';
+                            } else {
+                                html += '<td style="width:5%;"><button type="button" title="Add Ids"  class="btn edit_driver edicion_driver" onclick="agregar_ids(' + item.id_packing_list + ')" style="padding: 0em 0.3em !important;  background:none; color:#3479bf; font-weight: bolder; " > <span class="glyphicon glyphicon-tag" aria-hidden="true"  style="padding 0px !important;"></span> </button>';
+                                html += '<button type="button" title="Edit Ids"  class="btn edit_driver edicion_driver" onclick="editar_ids(' + item.id_packing_list + ')" style="padding: 0em 0.3em !important;  background:none; color:#3479bf; font-weight: bolder; " > <span class="glyphicon glyphicon-tags" aria-hidden="true"  style="padding 0px !important;"></span> </button></td>';
+                            }
+                            html += '<td style="width:5%;"><button type="button" title="Edit packing list"  class="btn edit_driver edicion" onclick="editar_pk_completo(' + item.id_packing_list + ')" style="padding: 0em 0.3em !important;  background:none; color:#3479bf; font-weight: bolder; " > <span class="glyphicon glyphicon-edit" aria-hidden="true"  style="padding 0px !important;"></span> </button></td>';
+                            html += '<td style="width:5%;"><button type="button" title="Delete packing list"  class="btn edit_driver edicion" onclick="eliminar_pk( \'' + item.id_packing_list + '*' + item.id_tipo + '\')" style="padding: 0em 0.3em !important;  background:none; color:#3479bf; font-weight: bolder; " > <span class="glyphicon glyphicon-remove" aria-hidden="true"  style="padding 0px !important;"></span> </button></td>';
+                        } else {
+                            html += '<td style="width:5%;"></td>';
+                            html += '<td style="width:5%;"></td>';
+                            html += '<td style="width:5%;"></td>';
+                        }
+
+                        html += '</tr>';
+                    }
+                });
+                $(".body_tabla_pk").html(html);
+                $("#load_shipping").css('display', 'none');
+            },
+            error: function (errormessage) { alert(errormessage.responseText); }
+        });
+    }
+     function borrar_pk(datos) {
+        var data = datos.split('*');
+        $.ajax({
+            url: '/Shipping/eliminar_packing_pk',
+            data: "{'packing':'" + data[0] + "','tipo':'" + data[1] + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                obtener_pks('');
+            }
+        });
+    }
+    var tipo_packing_asignacion,id_packing_asignacion;
+    function cambiar_pk(datos) {
+        var data = datos.split('*');
+        id_packing_asignacion = data[0];
+        tipo_packing_asignacion = data[1];
+        $.ajax({
+            //url: '/Shipping/asignar_pk',
+            url: '/Shipping/buscar_pks_disponibles',
+            data: "{'tipo':'" + data[1] + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (jsonData) {
+                var pks = jsonData.Data.pks;
+                var next_pk = jsonData.Data.next_pk;
+                $("#pk_siguiente").html("Use the next one: " + next_pk);
+                var html = '';
+                $.each(pks, function (key, p) {
+                    html += '<tr id="'+p.id_pk+'">';
+                    html += '<td>' + p.id_pk + '</td>';
+                    html += '<td>' + p.pk + '</td>';
+                    html += '<td>' + p.fecha + '</td>';
+                    html += '</tr>';
+                });
+                $('.rows_tabla_pk_assignment').html(html);
+                $("#modal_pks_change").modal("show");
+            }
+        });
+    }
+    $(document).on("click", "#tabla_pk_assignment tr", function () {
+        //var row = this.rowIndex;
+        //var idpk = $('#tabla_pk_assignement tr:eq(' + row + ')  td:nth-child(1)').html();
+        var idpk = this.id;
+        id_pk_usar = idpk;
+        cambiar_color_tabla_pks_borrados(idpk);
+
+    });
+    function cambiar_color_tabla_pks_borrados(idpk) {
+        $('#tabla_pk_assignment tbody tr').each(function () {
+            //alert($(this).find('td:eq(0)').html());
+            var tabla = $(this).find('td:eq(0)').html();
+            if (tabla == idpk) {
+                $(this).css('background', '#46a772');
+                $(this).css('color', 'white');
+            } else {
+                $(this).css('background', 'white');
+                $(this).css('color', 'black');
+            }
+        });
+    }
+
+    function asignar_nuevo_pk() {
+        $.ajax({
+            url: '/Shipping/asignar_pk',
+            data: "{'packing':'" + id_packing_asignacion + "','tipo':'" + tipo_packing_asignacion + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                obtener_pks('');
+                $("#modal_pks_change").modal("hide");
+            }
+        });
+    }
+    function guardar_asignacion_pk(event) {
+        if (id_pk_usar!=0) {
+            $.ajax({
+                url: '/Shipping/asignar_pk_borrado',
+                data: "{'packing':'" + id_packing_asignacion + "','tipo':'" + tipo_packing_asignacion + "','id_pk_borrado':'" + id_pk_usar + "'}",
+                contentType: 'application/json',
+                dataType: 'json',
+                type: 'post',
+                success: function (result) {
+                    obtener_pks('');
+                    $("#modal_pks_change").modal("hide");
+                }
+            });
+        } else {
+            $("#load_shipping").css('display', 'none');
+            event.preventDefault();
+            alertify.alert('Error!', 'Select a PK');
+            return false;
+        }
+    }
+
+    function eliminar_pk(info) {
+        var data = info.split('*');
+        $.ajax({
+            url: '/Shipping/eliminar_packing',
+            data: "{'packing':'" + data[0] + "','tipo':'" + data[1] + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                obtener_pks('');
+            }
+        });
+    }
+    function obtener_contenedores_edicion() {
+       $.ajax({
+            url: '/Shipping/buscar_contenedores_select',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                var html = '<label class="">Container&nbsp;</label> <select class="form-control pk " id="caja_contenedor_edit_pk" >';
+                // var html = '<select class="form-control " id="caja_contenedor_pk" >';
+                $.each(result, function (key, item) {
+                    html += '<option  value="' + item.id_container + '">' + item.eco + '</option>';
+                });
+                html += '</select>';
+                $("#div_container_edit").html(html);
+            }
+        });
+    }
+    function obtener_conductores_edicion() {
+        $.ajax({
+            url: '/Shipping/buscar_conductores_select',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                var html = '<label class="">Driver&nbsp;</label> <select class="form-control  " id="caja_conductor_edit_pk" >';
+                //var html = '<select class="form-control " id="caja_conductor_pk" >';
+                $.each(result, function (key, item) {
+                    html += '<option  value="' + item.id_driver + '">' + item.driver_name + '</option>';
+                });
+                html += '</select>';
+                $("#div_driver_edit").html(html);
+            }
+        });
+    }
+
+    function obtener_direcciones_edicion() {
+        $.ajax({
+            url: '/Shipping/buscar_direcciones_select',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                var html = '<label class="">Address&nbsp;</label> <select class="form-control pk" id="caja_direccion_edit_pk" >';
+                //var html = '<select class="form-control " id="caja_direccion_pk" >';
+                $.each(result, function (key, item) {
+                    html += '<option  value="' + item.id_direccion + '">' + item.nombre + '</option>';
+                });
+                html += '</select>';
+                $("#div_address_edit").html(html);
+               // $("#loading_pk").css('display', 'none');
+            }
+        });
+    }
+    /**
+     * *********************************************************************************************************
+     *
+     */
+    var pk_id;
+    var packing_list_number;
+    function editar_ids(id) {
+        $("#load_shipping").css('display', 'inline');
+        pk_id = id;
+        $.ajax({
+            url: "/Shipping/buscar_estilos_packing",
+            data: "{'id':'"+id+"'}",
+            type: "POST",
+            contentType: "application/json;charset=utf-8",
+            dataType: "json",
+            success: function (jsonData) {
+                var html='',texto='',tarima='';
+                var i = 0;
+                var lista_estilo = jsonData.Data.estilos;
+                //var lista_samples = jsonData.Data.samples;
+                var lista_returns = jsonData.Data.returns;
+                var lista_fantasy = jsonData.Data.fantasy;
+                //tipo_packing = jsonData.Data.tipo_packing;
+                $("#ppk_bk_id").css('display', 'none');
+                $("#assort_id").css('display', 'none');
+
+                $("#caja_numero_id").val("");
+                $(".rows_tabla_estilos_ids").html("");
+                var indices=[], indices_bp=[];
+                //PRIMERO LO QUE TIENE ID
+                $.each(lista_estilo, function (key, item) { //PRIMERO OBTENER LOS DIFERENTES ÍNDICES
+                    if (item.tipo_empaque != 3) {
+                        if (item.index_dc != 0) {
+                            if (item.customer == 2) {//FANTASY
+                                if (indices.length == 0) {
+                                    indices.push(item.index_dc);
+                                } else {
+                                    var existe = 0;
+                                    for (var t = 0; t < indices.length; t++) {
+                                        if (indices[t] == item.index_dc) { existe++; }
+                                    }
+                                    if (existe == 0) {
+                                        indices.push(item.index_dc);
+                                    }
+                                }
+                            } else {
+                                if (item.customer_final == 27) {//HOYT TOPIC CREO
+                                    if (indices.length == 0) {
+                                        indices.push(item.index_dc);
+                                    } else {
+                                        var existe = 0;
+                                        for (var t = 0; t < indices.length; t++) {
+                                            if (indices[t] == item.index_dc) { existe++; }
+                                        }
+                                        if (existe == 0) {
+                                            indices.push(item.index_dc);
+                                        }
+                                    }
+                                } else {//NO FANTASY
+                                    if (item.tipo == "EXT" || item.tipo == "DMG") {
+                                        if (indices.length == 0) {
+                                            indices.push(item.index_dc);
+                                        } else {
+                                            var existe = 0;
+                                            for (var t = 0; t < indices.length; t++) {
+                                                if (indices[t] == item.index_dc) { existe++; }
+                                            }
+                                            if (existe == 0) {
+                                                indices.push(item.index_dc);
+                                            }
+                                        }
+                                    }else {
+                                        if (item.tipo_empaque == 1 || item.tipo_empaque == 5) {
+                                            if (item.dc != "0") {
+                                                if (indices.length == 0) {
+                                                    indices.push(item.index_dc);
+                                                } else {
+                                                    var existe = 0;
+                                                    for (var t = 0; t < indices.length; t++) {
+                                                        if (indices[t] == item.index_dc) { existe++; }
+                                                    }
+                                                    if (existe == 0) {
+                                                        indices.push(item.index_dc);
+                                                    }
+                                                }
+                                            } else {
+                                                if (indices_bp.length == 0) {
+                                                    indices_bp.push(item.index_dc);
+                                                } else {
+                                                    var existe = 0;
+                                                    for (var t = 0; t < indices_bp.length; t++) {
+                                                        if (indices_bp[t] == item.index_dc) { existe++; }
+                                                    }
+                                                    if (existe == 0) {
+                                                        indices_bp.push(item.index_dc);
+                                                    }
+                                                }
+                                            }
+
+                                        } else {//tipo de empaque 2-3-4 creeeeeo
+                                            if (indices.length == 0) {
+                                                indices.push(item.index_dc);
+                                            } else {
+                                                var existe = 0;
+                                                for (var t = 0; t < indices.length; t++) {
+                                                    if (indices[t] == item.index_dc) { existe++; }
+                                                }
+                                                if (existe == 0) {
+                                                    indices.push(item.index_dc);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                        }
+                    }
+                });//PRIMERO OBTENER LOS DIFERENTES ÍNDICES
+                $.each(indices, function (key, indice) {//RECORRER INDICES Y ESTILOS
+                    var descripcion ,dc;
+                    i++;
+                    html += '<tr>';
+                    html += '<td style="visibility:hidden;  border: none; width:1px;">' + i + '</td>';
+
+                    texto = ''; var id_ship = 0, empaque_tipo = 0; tarima = '';
+                    $.each(lista_estilo, function (key, item) {
+                        if (item.index_dc == indice ) {
+                            descripcion = (item.estilo).replace(/\s/g, '') + " " + (item.descripcion).replace(/\s/g, '')+' '+(item.packing_name).replace(/\s/g, '');// + " " + item.color;
+                            if (item.tipo_empaque == 1) { descripcion += " BP"; texto += ' ' + item.talla + ':' + item.boxes; }
+                            if (item.tipo_empaque == 5) { descripcion += " BP "; texto += ' ' + item.talla + ':' + item.boxes; }
+                            if (item.tipo_empaque == 2) { descripcion += " PPK"; texto += item.boxes + ' BOXES';   }
+                            if (dc != 0) { dc = item.dc; } else { dc = " "; }
+                            if (item.tipo != "NONE") { descripcion += " " + item.tipo; }
+                            id_ship = item.id_shipping_id;
+                            empaque_tipo = item.tipo_empaque;
+                            tarima = item.id_tarima;
+                        }
+                    });
+                    html += '<td style="visibility:hidden; border: none;  width:1px;">'+id_ship+'</td>';
+                    html += '<td>' + descripcion + ' </td>';
+                    html += '<td>' + texto + '  </td>';
+                   if (dc != 0) { html += '<td>' + dc + '</td>'; }
+                        else { html += '<td> </td>'; }
+                    html += '<td><input  maxlength="6" class="numeric form-control " value="'+tarima+'" style=" padding: 1px 2px;" /></td>'//TARIMA
+                   // html += '<td style="visibility:hidden; border: none; width:1px;"><input type="checkbox"  class="custom-control-input" id="cbid_' + i + '"></td>';
+                    html += '<td style="visibility:hidden; border: none; width:1px;">' + pk_id + '</td>';
+                    html += '<td style="visibility:hidden; border: none; width:1px;">' + indice + '</td>';
+                    html += '<td style="visibility:hidden; border: none; width:1px;">' + empaque_tipo + '</td>';
+                    html += '<td style="visibility:hidden; border: none; width:1px;">1</td>';
+                    html += '</tr>';
+                });//RECORRER INDICES Y ESTILOS
+
+                $.each(indices_bp, function (key, indice) {//RECORRER INDICES Y ESTILOS
+                    $.each(lista_estilo, function (key, item) {
+                        if (item.index_dc == indice) {
+                            var descripcion, dc;
+                            i++;
+                            html += '<tr>';
+                            html += '<td style="visibility:hidden;  border: none; width:1px;">' + i + '</td>';
+                            html += '<td style="visibility:hidden; border: none;  width:1px;">'+item.id_shipping_id+'</td>';
+                            texto = '';
+                            descripcion = (item.estilo).replace(/\s/g, '') + " " + (item.descripcion).replace(/\s/g, '')+' '+(item.packing_name).replace(/\s/g, '');// + " " + item.color;
+                            if (item.tipo_empaque == 1) { descripcion += " BP"; texto += ' ' + item.talla + ':' + item.boxes; }
+                            if (item.tipo_empaque == 5) { descripcion += " BP "; texto += ' ' + item.talla + ':' + item.boxes; }
+                            if (item.tipo_empaque == 2) { descripcion += " PPK"; texto += item.boxes + ' BOXES'; }
+                            if (dc != 0) { dc = item.dc; } else { dc = " "; }
+                            if (item.tipo != "NONE") { descripcion += " " + item.tipo; }
+
+                            html += '<td>' + descripcion + ' </td>';
+                            html += '<td>' + texto + '  </td>';
+                            if (item.dc != 0) { html += '<td>' + item.dc + '</td>'; }
+                        else { html += '<td> </td>'; }
+                            html += '<td><input  maxlength="6" class="numeric form-control " value="'+item.id_tarima+'" style=" padding: 1px 2px;" /></td>'//TALLAS
+                            //html += '<td style="visibility:hidden; border: none; width:1px;"><input type="checkbox"  class="custom-control-input" id="cbid_' + i + '"></td>';
+                            html += '<td style="visibility:hidden; border: none; width:1px;">' + pk_id + '</td>';
+                            html += '<td style="visibility:hidden; border: none; width:1px;">' + indice + '</td>';
+                            html += '<td style="visibility:hidden; border: none; width:1px;">' + item.tipo_empaque + '</td>';
+                            html += '<td style="visibility:hidden; border: none; width:1px;">1</td>';
+                            html += '</tr>';
+                        }
+                    });
+
+                });//RECORRER INDICES Y ESTILOS
+
+                $.each(lista_estilo, function (key, item) {//AGREGAR ESTILOS SIN DC&BP
+                    if ( item.tipo_empaque==3) {
+                        i++; texto = '';
+                        html += '<tr>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">' + i + '</td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">' + item.id_shipping_id + '</td>';
+                        debugger
+                        if (item.tipo_empaque == 3) {
+                            html += '<td>';
+                            $.each(item.assort.lista_estilos, function (key, a) {
+                                html += '<p>' + a.estilo + " " + a.descripcion + ' ' + item.tipo + ' Assort</p>';
+                            });
+                            html += '</td>';
+                        } else {
+                            if (item.tipo_empaque == 1) {
+                                html += '<td>' + item.estilo + " " + item.descripcion + ' ' + item.tipo + ' BP</td>';
+                            } else {
+                                if (item.tipo_empaque == 5) {
+                                    html += '<td>' + (item.estilo + " " + item.descripcion + ' ' + item.tipo +' '+item.packing_name).replace(/\s/g, '')+' BP</td>';
+                                } else {
+                                    html += '<td>' + item.estilo + " " + item.descripcion + ' ' + item.tipo + ' PPK</td>';
+                                }
+                            }
+                        }
+                        if (item.tipo == "DMG" || item.tipo == "EXT" || item.tipo == "EXAMPLES") {
+                            $.each(item.lista_ratio, function (key, lr) {
+                                texto += '' + lr.talla + ':' +  lr.ratio + "  ";
+                            });
+                        } else {
+                            if (item.tipo_empaque == 1) {
+                                texto += '' + item.talla + ':' + item.boxes + "  ";
+                                /*$.each(item.lista_ratio, function (key, lr) {
+                                    if (lr.id_talla == item.id_talla) { texto += '' + item.talla + ':' + (item.boxes / lr.ratio) + "  "; }
+                                });*/
+                            }
+                            if (item.tipo_empaque == 2) { texto = '' + item.boxes + '  '; }
+                            if (item.tipo_empaque == 3) { texto = '' + item.boxes + '  '; }
+                        }
+
+                        html += '<td>' + texto + '</td>';
+                        if (item.dc != 0) { html += '<td>' + item.dc + '</td>'; }
+                        else { html += '<td> </td>'; }
+                        html += '<td><input  maxlength="6" class="numeric form-control " value="'+item.id_tarima+'" style=" padding: 1px 2px;" /></td>'//TALLAS
+                        //html += '<td style="visibility:hidden; border: none; width:1px;"><input type="checkbox"  class="custom-control-input" id="cbid_' + i + '"></td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">' + item.pk + '</td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">' + item.index_dc + '</td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">' + item.tipo_empaque + '</td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">1</td>';
+                        html += '</tr>';
+                    }
+                });
+
+                $.each(lista_fantasy, function (key, item) {
+                    if (item.id_tarima == 0) {
+                        i++;
+                        html += '<tr>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">' + i + '</td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">' + item.id_fantasy + '</td>';
+                        html += '<td style="">' + item.estilo + '</td>';
+                        html += '<td style="">' + item.total + '</td>';
+                        html += '<td style=""> </td>';
+                        html += '<td><input  maxlength="6" class="numeric form-control " value="'+item.id_tarima+'" style=" padding: 1px 2px;" /></td>'//TALLAS
+                        //html += '<td style="visibility:hidden; border: none; width:1px;"><input type="checkbox"  class="custom-control-input" id="cbid_' + i + '"></td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">' + item.pk + '</td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">0</td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">6 </td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">6</td>';
+                        html += '</tr>';
+                    }
+                });
+                $.each(lista_returns, function (key, item) {
+                    if (item.id_tarima == 0) {
+                        i++;
+                        html += '<tr>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">' + i + '</td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">' + item.id_return + '</td>';
+                        html += '<td style="">' + item.item + '</td>';
+                        html += '<td style="">' + item.total + ' </td>';
+                        html += '<td style="">' + item.cajas + '  </td>';
+                        html += '<td><input  maxlength="6" class="numeric form-control " value="'+item.id_tarima+'" style=" padding: 1px 2px;" /></td>'//TALLAS
+                       // html += '<td style="visibility:hidden; border: none; width:1px;"><input type="checkbox"  class="custom-control-input" id="cbid_' + i + '"></td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">' + item.pk + '</td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">0</td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">5 </td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">5</td>';
+                        html += '</tr>';
+                    }
+                });
+
+                $("#ppk_bk_id").css('display', 'inline');
+                $(".rows_tabla_estilos_ids").html(html);
+
+                $("#load_shipping").css('display', 'none');
+                $("#modal_ids").modal("show");
+                /*if (i > 0) {
+                    $("#modal_ids").modal("show");
+                } else {
+                    $("#modal_ids").modal("hide");
+                    alertify.alert('Warning', 'There are not more styles without IDs');
+                }*/
+            },
+            error: function (errormessage) { alert(errormessage.responseText); }
+        });
+    }
+
+
+    function agregar_ids(id) {
+        $("#load_shipping").css('display', 'inline');
+        pk_id = id;
+        $.ajax({
+            url: "/Shipping/buscar_estilos_packing_inicio",
+            data: "{'id':'"+id+"'}",
+            type: "POST",
+            contentType: "application/json;charset=utf-8",
+            dataType: "json",
+            success: function (jsonData) {
+                var html='',texto='',tarima='';
+                var i = 0;
+                var lista_estilo = jsonData.Data.estilos;
+                //var lista_samples = jsonData.Data.samples;
+                var lista_returns = jsonData.Data.returns;
+                var lista_fantasy = jsonData.Data.fantasy;
+                //tipo_packing = jsonData.Data.tipo_packing;
+                $("#ppk_bk_id2").css('display', 'none');
+                $("#assort_id2").css('display', 'none');
+
+                $("#caja_numero_id").val("");
+                $(".rows_tabla_estilos_ids2").html("");
+                var indices=[], indices_bp=[];
+                //PRIMERO LO QUE TIENE ID
+                $.each(lista_estilo, function (key, item) { //PRIMERO OBTENER LOS DIFERENTES ÍNDICES
+                    if (item.tipo_empaque != 3) {
+                        if (item.customer == 2) {//FANTASY
+                            if (indices.length == 0) {
+                                indices.push(item.index_dc);
+                            } else {
+                                var existe = 0;
+                                for (var t = 0; t < indices.length; t++) {
+                                    if (indices[t] == item.index_dc) { existe++; }
+                                }
+                                if (existe == 0) {
+                                    indices.push(item.index_dc);
+                                }
+                            }
+                        } else {
+                            if (item.customer_final == 27) {
+                                if (indices.length == 0) {
+                                    indices.push(item.index_dc);
+                                } else {
+                                    var existe = 0;
+                                    for (var t = 0; t < indices.length; t++) {
+                                        if (indices[t] == item.index_dc) { existe++; }
+                                    }
+                                    if (existe == 0) {
+                                        indices.push(item.index_dc);
+                                    }
+                                }
+                            } else {//NO FANTASY
+                                if (item.tipo == "EXT" || item.tipo == "DMG") {
+                                    if (indices.length == 0) {
+                                        indices.push(item.index_dc);
+                                    } else {
+                                        var existe = 0;
+                                        for (var t = 0; t < indices.length; t++) {
+                                            if (indices[t] == item.index_dc) { existe++; }
+                                        }
+                                        if (existe == 0) {
+                                            indices.push(item.index_dc);
+                                        }
+                                    }
+                                } else {
+                                    if (item.tipo_empaque == 1 || item.tipo_empaque == 5) {
+                                        if (item.dc != "0") {
+                                            if (indices.length == 0) {
+                                                indices.push(item.index_dc);
+                                            } else {
+                                                var existe = 0;
+                                                for (var t = 0; t < indices.length; t++) {
+                                                    if (indices[t] == item.index_dc) { existe++; }
+                                                }
+                                                if (existe == 0) {
+                                                    indices.push(item.index_dc);
+                                                }
+                                            }
+                                        } else {
+                                            if (indices_bp.length == 0) {
+                                                indices_bp.push(item.index_dc);
+                                            } else {
+                                                var existe = 0;
+                                                for (var t = 0; t < indices_bp.length; t++) {
+                                                    if (indices_bp[t] == item.index_dc) { existe++; }
+                                                }
+                                                if (existe == 0) {
+                                                    indices_bp.push(item.index_dc);
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        if (indices.length == 0) {
+                                            indices.push(item.index_dc);
+                                        } else {
+                                            var existe = 0;
+                                            for (var t = 0; t < indices.length; t++) {
+                                                if (indices[t] == item.index_dc) { existe++; }
+                                            }
+                                            if (existe == 0) {
+                                                indices.push(item.index_dc);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+
+                    }
+                });//PRIMERO OBTENER LOS DIFERENTES ÍNDICES
+                $.each(indices, function (key, indice) {//RECORRER INDICES Y ESTILOS
+                    var descripcion ,dc;
+                    i++;
+                    html += '<tr>';
+                    html += '<td style="visibility:hidden;  border: none; width:1px;">' + i + '</td>';
+
+                    texto = ''; var id_ship = 0, empaque_tipo = 0; tarima = '';
+                    $.each(lista_estilo, function (key, item) {
+                        if (item.index_dc == indice ) {
+                            descripcion = (item.estilo).replace(/\s/g, '') + " " + (item.descripcion).replace(/\s/g, '')+' '+(item.packing_name).replace(/\s/g, '');// + " " + item.color;
+                            if (item.tipo_empaque == 1) { descripcion += " BP"; texto += ' ' + item.talla + ':' + item.boxes; }
+                            if (item.tipo_empaque == 5) { descripcion += " BP "; texto += ' ' + item.talla + ':' + item.boxes; }
+                            if (item.tipo_empaque == 2) { descripcion += " PPK"; texto += item.boxes + ' BOXES';   }
+                            if (dc != 0) { dc = item.dc; } else { dc = " "; }
+                            if (item.tipo != "NONE") { descripcion += " " + item.tipo; }
+                            id_ship = item.id_shipping_id;
+                            empaque_tipo = item.tipo_empaque;
+                            tarima = item.id_tarima;
+                        }
+                    });
+                    html += '<td style="visibility:hidden; border: none;  width:1px;">'+id_ship+'</td>';
+                    html += '<td>' + descripcion + ' </td>';
+                    html += '<td>' + texto + '  </td>';
+                   if (dc != 0) { html += '<td>' + dc + '</td>'; }
+                        else { html += '<td> </td>'; }
+                    //html += '<td><input  maxlength="6" class="numeric form-control " value="'+tarima+'" style=" padding: 1px 2px;" /></td>'//TARIMA
+                    html += '<td style="visibility:hidden; border: none; width:1px;"><input type="checkbox"  class="custom-control-input" id="cbid_' + i + '"></td>';
+                    html += '<td style="visibility:hidden; border: none; width:1px;">' + pk_id + '</td>';
+                    html += '<td style="visibility:hidden; border: none; width:1px;">' + indice + '</td>';
+                    html += '<td style="visibility:hidden; border: none; width:1px;">' + empaque_tipo + '</td>';
+                    html += '<td style="visibility:hidden; border: none; width:1px;">1</td>';
+                    html += '</tr>';
+                });//RECORRER INDICES Y ESTILOS
+
+                $.each(indices_bp, function (key, indice) {//RECORRER INDICES Y ESTILOS
+                    $.each(lista_estilo, function (key, item) {
+                        if (item.index_dc == indice) {
+                            var descripcion, dc;
+                            i++;
+                            html += '<tr>';
+                            html += '<td style="visibility:hidden;  border: none; width:1px;">' + i + '</td>';
+                            html += '<td style="visibility:hidden; border: none;  width:1px;">'+item.id_shipping_id+'</td>';
+                            texto = '';
+                            descripcion = (item.estilo).replace(/\s/g, '') + " " + (item.descripcion).replace(/\s/g, '')+' '+(item.packing_name).replace(/\s/g, '');// + " " + item.color;
+                            if (item.tipo_empaque == 1) { descripcion += " BP"; texto += ' ' + item.talla + ':' + item.boxes; }
+                            if (item.tipo_empaque == 5) { descripcion += " BP "; texto += ' ' + item.talla + ':' + item.boxes; }
+                            if (item.tipo_empaque == 2) { descripcion += " PPK"; texto += item.boxes + ' BOXES'; }
+                            if (dc != 0) { dc = item.dc; } else { dc = " "; }
+                            if (item.tipo != "NONE") { descripcion += " " + item.tipo; }
+
+                            html += '<td>' + descripcion + ' </td>';
+                            html += '<td>' + texto + '  </td>';
+                            if (item.dc != 0) { html += '<td>' + item.dc + '</td>'; }
+                        else { html += '<td> </td>'; }
+                           // html += '<td><input  maxlength="6" class="numeric form-control " value="'+item.id_tarima+'" style=" padding: 1px 2px;" /></td>'//TALLAS
+                            html += '<td style="visibility:hidden; border: none; width:1px;"><input type="checkbox"  class="custom-control-input" id="cbid_' + i + '"></td>';
+                            html += '<td style="visibility:hidden; border: none; width:1px;">' + pk_id + '</td>';
+                            html += '<td style="visibility:hidden; border: none; width:1px;">' + indice + '</td>';
+                            html += '<td style="visibility:hidden; border: none; width:1px;">' + item.tipo_empaque + '</td>';
+                            html += '<td style="visibility:hidden; border: none; width:1px;">1</td>';
+                            html += '</tr>';
+                        }
+                    });
+
+                });//RECORRER INDICES Y ESTILOS
+
+                $.each(lista_estilo, function (key, item) {//AGREGAR ESTILOS SIN DC&BP
+                    if ( item.tipo_empaque==3) {
+                        i++; texto = '';
+                        html += '<tr>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">' + i + '</td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">' + item.id_shipping_id + '</td>';
+                        debugger
+                        if (item.tipo_empaque == 3) {
+                            html += '<td>';
+                            $.each(item.assort.lista_estilos, function (key, a) {
+                                html += '<p>' + a.estilo + " " + a.descripcion + ' ' + item.tipo + ' Assort</p>';
+                            });
+                            html += '</td>';
+                        } else {
+                            if (item.tipo_empaque == 1) {
+                                html += '<td>' + item.estilo + " " + item.descripcion + ' ' + item.tipo + ' BP</td>';
+                            } else {
+                                if (item.tipo_empaque == 5) {
+                                    html += '<td>' + (item.estilo + " " + item.descripcion + ' ' + item.tipo +' '+item.packing_name).replace(/\s/g, '')+' BP</td>';
+                                } else {
+                                    html += '<td>' + item.estilo + " " + item.descripcion + ' ' + item.tipo + ' PPK</td>';
+                                }
+                            }
+                        }
+                        if (item.tipo == "DMG" || item.tipo == "EXT" || item.tipo == "EXAMPLES") {
+                            $.each(item.lista_ratio, function (key, lr) {
+                                texto += '' + lr.talla + ':' +  lr.ratio + "  ";
+                            });
+                        } else {
+                            if (item.tipo_empaque == 1) {
+                                texto += '' + item.talla + ':' + item.boxes + "  ";
+                                /*$.each(item.lista_ratio, function (key, lr) {
+                                    if (lr.id_talla == item.id_talla) { texto += '' + item.talla + ':' + (item.boxes / lr.ratio) + "  "; }
+                                });*/
+                            }
+                            if (item.tipo_empaque == 2) { texto = '' + item.boxes + '  '; }
+                            if (item.tipo_empaque == 3) { texto = '' + item.boxes + '  '; }
+                        }
+
+                        html += '<td>' + texto + '</td>';
+                        if (item.dc != 0) { html += '<td>' + item.dc + '</td>'; }
+                        else { html += '<td> </td>'; }
+                        //html += '<td><input  maxlength="6" class="numeric form-control " value="'+item.id_tarima+'" style=" padding: 1px 2px;" /></td>'//TALLAS
+                        html += '<td style="visibility:hidden; border: none; width:1px;"><input type="checkbox"  class="custom-control-input" id="cbid_' + i + '"></td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">' + item.pk + '</td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">' + item.index_dc + '</td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">' + item.tipo_empaque + '</td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">1</td>';
+                        html += '</tr>';
+                    }
+                });
+
+                $.each(lista_fantasy, function (key, item) {
+                    if (item.id_tarima == 0) {
+                        i++;
+                        html += '<tr>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">' + i + '</td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">' + item.id_fantasy + '</td>';
+                        html += '<td style="">' + item.estilo + '</td>';
+                        html += '<td style="">' + item.total + '</td>';
+                        html += '<td style=""> </td>';
+                        //html += '<td><input  maxlength="6" class="numeric form-control " value="'+item.id_tarima+'" style=" padding: 1px 2px;" /></td>'//TALLAS
+                        html += '<td style="visibility:hidden; border: none; width:1px;"><input type="checkbox"  class="custom-control-input" id="cbid_' + i + '"></td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">' + item.pk + '</td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">0</td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">6 </td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">6</td>';
+                        html += '</tr>';
+                    }
+                });
+                $.each(lista_returns, function (key, item) {
+                    if (item.id_tarima == 0) {
+                        i++;
+                        html += '<tr>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">' + i + '</td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">' + item.id_return + '</td>';
+                        html += '<td style="">' + item.item + '</td>';
+                        html += '<td style="">' + item.total + ' </td>';
+                        html += '<td style="">' + item.cajas + '  </td>';
+                        //html += '<td><input  maxlength="6" class="numeric form-control " value="'+item.id_tarima+'" style=" padding: 1px 2px;" /></td>'//TALLAS
+                        html += '<td style="visibility:hidden; border: none; width:1px;"><input type="checkbox"  class="custom-control-input" id="cbid_' + i + '"></td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">' + item.pk + '</td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">0</td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">5 </td>';
+                        html += '<td style="visibility:hidden; border: none; width:1px;">5</td>';
+                        html += '</tr>';
+                    }
+                });
+
+                $("#ppk_bk_id2").css('display', 'inline');
+                $(".rows_tabla_estilos_ids2").html(html);
+
+                $("#load_shipping").css('display', 'none');
+                if (i > 0) {
+                    $("#modal_ids2").modal("show");
+                } else {
+                    $("#modal_ids2").modal("hide");
+                    alertify.alert('Warning', 'There are not more styles without IDs');
+                }
+            },
+            error: function (errormessage) { alert(errormessage.responseText); }
+        });
+    }
+
+
+    var estilos_id_seleccionados= 0;
+    $(document).on("click", "#tabla_estilos_ids2 tr", function () {
+        var row = this.rowIndex;
+        var chekbox = $('#tabla_estilos_ids2 tr:eq(' + row + ')  td:nth-child(1)').html();
+        if (this.style.background == "" || this.style.background == "white") {
+            $("#cbid_" + chekbox).prop('checked', true);
+            $(this).css('background', '#46a772');
+            $(this).css('color', 'white');
+            estilos_id_seleccionados++;
+        } else {
+            $("#cbid_" + chekbox).prop('checked', false);
+            $(this).css('background', 'white');
+            $(this).css('color', 'black');
+            estilos_id_seleccionados--;
+        }
+    });
+    var ids_estilos_pk;
+    var shipping_id, packing, index, empaque,tipo_id,tarimas;
+    function guardar_ids(event) {
+        var error = 0; ids_estilos_pk = '';
+        shipping_id = ''; packing = ''; index = ''; empaque = ''; tipo_id = ''; tarimas = '';
+
+        if (error == 0) {
+            $("#load_shipping").css('display', 'inline');
+            $('#tabla_estilos_ids tbody tr').each(function () {
+                //if ($(this).find('td:eq(5) input').is(":checked")) {
+                    //ids_estilos_pk += "*" + $(this).find('td:eq(0) ').html();
+                    shipping_id += "*" + $(this).find('td:eq(1) ').html();
+                    packing += "*" + $(this).find('td:eq(6) ').html();
+                    index += "*" + $(this).find('td:eq(7) ').html();
+                    empaque += "*" + $(this).find('td:eq(8) ').html();
+                    tipo_id += "*" + $(this).find('td:eq(9) ').html();
+                    tarimas += "*" + $(this).find('td:eq(5) input').val();
+                //}
+            });
+            enviar_datos_ids();
+            $("#load_shipping").css('display', 'none');
+        } else {
+            $("#load_shipping").css('display', 'none');
+            event.preventDefault();
+            alertify.alert('Error!', 'Check empty fields, please');
+            return false;
+        }
+    }
+    function enviar_datos_ids() {
+        $("#load_shipping").css('display', 'inline');
+        $.ajax({
+            url: '/Shipping/guardar_ids_pk',
+            data: "{'tarima':'" + tarimas + "','shipping_id':'" + shipping_id + "','packing':'" + packing + "','index':'" + index + "','empaque':'" + empaque + "','tipo':'" + tipo_id + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (jsonData) {
+                //agregar_ids(pk_id);
+                $('#modal_ids').modal('hide');
+                alertify.success('Succes! Changes saved!');
+                alertify.set('notifier', 'position', 'top-right');
+            }
+        });
+    }
+     function enviar_datos_ids2() {
+        $("#load_shipping").css('display', 'inline');
+        $.ajax({
+            url: '/Shipping/guardar_ids_pk_individual',
+            data: "{'tarima':'" + tarimas + "','shipping_id':'" + shipping_id + "','packing':'" + packing + "','index':'" + index + "','empaque':'" + empaque + "','tipo':'" + tipo_id + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (jsonData) {
+                agregar_ids(pk_id);
+                $('#modal_ids2').modal('hide');
+                alertify.success('Succes! Changes saved!');
+                alertify.set('notifier', 'position', 'top-right');
+            }
+        });
+    }
+
+
+     function guardar_ids2(event) {
+        var error = 0; ids_estilos_pk = '';
+        shipping_id = ''; packing = ''; index = ''; empaque = ''; tipo_id = ''; tarimas = '';
+         if ($("#caja_numero_id").val() == '') { error++; }
+         var seleccionados = 0;
+         $('#tabla_estilos_ids2 tbody tr').each(function () {
+             if ($(this).find('td:eq(5) input').is(":checked")) {
+                 seleccionados++;
+             }
+         });
+         if (seleccionados == 0) { error++; }
+        if (error == 0) {
+            $("#load_shipping").css('display', 'inline');
+            tarimas=$("#caja_numero_id").val();
+            $('#tabla_estilos_ids2 tbody tr').each(function () {
+                if ($(this).find('td:eq(5) input').is(":checked")) {
+                    ids_estilos_pk += "*" + $(this).find('td:eq(0) ').html();
+                    shipping_id += "*" + $(this).find('td:eq(1) ').html();
+                    packing += "*" + $(this).find('td:eq(6) ').html();
+                    index += "*" + $(this).find('td:eq(7) ').html();
+                    empaque += "*" + $(this).find('td:eq(8) ').html();
+                    tipo_id += "*" + $(this).find('td:eq(9) ').html();
+                    //tarimas += "*" + $(this).find('td:eq(5) input').val();
+                }
+            });
+            enviar_datos_ids2();
+            $("#load_shipping").css('display', 'none');
+        } else {
+            $("#load_shipping").css('display', 'none');
+            event.preventDefault();
+            alertify.alert('Error!', 'Check empty fields, please');
+            return false;
+        }
+    }
+
+
+
+    $(document).on("dblclick", "#tabla_pks tr", function () {
+        var row = this.rowIndex;
+        var number = $('#tabla_pks tr:eq(' + row + ') td:eq(0)').html();
+        if (!(isNaN(number))) { ver_pk(number); }
+    });
+    //CAMBIAR LOS ROW DE COLOR
+    var tarimas_seleccionadas = 0;
+    $(document).on("click", "#tabla_pks tr", function () {
+        var row = this.rowIndex;
+        if (row > 0) {
+            if (this.style.background == "" || this.style.background == "white") {
+                $(this).css('background', '#46a772');
+                $(this).css('color', 'white');
+            } else {
+                $(this).css('background', 'white');
+                $(this).css('color', 'black');
+            }
+        }
+
+    });
+    function ver_pk(id) {
+        $.ajax({
+            url: '/Shipping/abrir_pk',
+            data: "{'id':'" + id + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                //imprimir_pk();
+            }
+        });
+        $("#espera").css('display','inline');
+        var boton = document.getElementById('link_excel');
+        setTimeout(function () { $("#espera").css('display', 'none'); }, 3000);
+        boton.click();
+        //$("#load_shipping").css('display', 'none');
+        //$("#loading").css('display', 'none');
+
+    }
+
+
+    $(document).on("input", ".po", function () { $('.po').autocomplete({ source: '@Url.Action("Autocomplete_po")' }); });
+    $(document).on("input", ".tallas", function () { $('.tallas').autocomplete({ source: '@Url.Action("Autocomplete_tallas")' }); });
+    function redireccionar_recibos() {
+        window.location = '/Shipping/recibo_fantasy';
+    }
+    var columnas_dc, rows_dc,columnas_estilos_dc;
+
+    /*********************************************************************************************************************************************/
+    function edit(id) {
+        $.ajax({
+            url: "/Shipping/buscar_informacion_edicion_pk",
+            data: "{'pk':'"+id+"'}",
+            type: "POST",
+            contentType: "application/json;charset=utf-8",
+            dataType: "json",
+            success: function (result) {
+                //var html = '';
+                $("#caja_pk_edit").val(result.packing);
+                $("#caja_seal_pk_edit").val(result.seal);
+                $("#caja_replacement_pk_edit").val(result.replacement);
+                $("#caja_conductor_edit_pk").val(result.id_driver);
+                $("#caja_contenedor_edit_pk").val(result.id_container);
+                $("#caja_id_pk").val(result.id_packing_list);
+                $("#caja_direccion_edit_pk").val(result.id_direccion_envio);
+                $("#modal_edicion").modal("show");
+            },
+            error: function (errormessage) { alert(errormessage.responseText); }
+        });
+    }//guardar_edicion
+    function editar_pk_completo(id) {/**********************************************************************************************************************************/
+        $.ajax({
+            url: "/Shipping/edicion_pk_completo",
+            data: "{'id':'"+id+"'}",
+            type: "POST",
+            contentType: "application/json;charset=utf-8",
+            dataType: "json",
+            success: function (result) {
+               // redireccionarPaginaEdicion();
+            },
+            error: function (errormessage) { alert(errormessage.responseText); }
+        });
+        var boton = document.getElementById('link_edicion_packings');
+        //setTimeout(function () { $("#espera_t").css('display', 'none'); }, 2000);
+        boton.click();
+    }//guardar_edicion
+    function redireccionarPaginaEdicion() { window.location = '/Shipping/edicion_pk'; }
+
+
+
+    function guardar_edicion() {
+        $.ajax({
+            url: "/Shipping/guardar_informacion_edicion_pk",
+            data: "{'id':'" + $("#caja_id_pk").val() + "','sello':'" + $("#caja_seal_pk_edit").val() + "','replacement':'" + $("#caja_replacement_pk_edit").val() + "','conductor':'" + $("#caja_conductor_edit_pk").val() + "','contenedor':'" + $("#caja_contenedor_edit_pk").val() + "','direccion':'" + $("#caja_direccion_edit_pk").val()+"'}",
+            type: "POST",
+            contentType: "application/json;charset=utf-8",
+            dataType: "json",
+            success: function (result) {
+                $("#modal_edicion").modal("hide");
+                alertify.success('Succes! Changes saved!');
+                alertify.set('notifier', 'position', 'top-right');
+            },
+            error: function (errormessage) { alert(errormessage.responseText); }
+        });
+    }
+    /*********************************************************************************************************************************************/
+
+    function obtener_drivers() {
+        $("#load_fantasy").css('display', 'inline');
+        $("#load_shipping").css('display', 'inline');
+        $.ajax({
+            url: "/Shipping/buscar_conductores",
+            type: "POST",
+            contentType: "application/json;charset=utf-8",
+            dataType: "json",
+            success: function (result) {
+                var html = '';
+                $.each(result, function (key, item) {
+                    html += '<tr>';
+                    html += '<td style="width:3%;">' + item.id_driver + '</td>';
+                    html += '<td style="width:24%;">' + item.carrier + '</td>';
+                    html += '<td style="width:25%;">' + item.driver_name + '</td>';
+                    html += '<td style="width:10%;">' + item.plates + '</td>';
+                    html += '<td  style="width:10%;">' + item.scac + '</td>';
+                    html += '<td style="width:10%;">' + item.caat + '</td>';
+                    html += '<td style="width:10%;">' + item.tractor + '</td>';
+                    html += '<td style="width:4%;"> <button type="button"  title="Edit driver" class="btn edit_driver edicion_driver" onclick="modificar_driver(' + item.id_driver + ')" style="padding: 0em 0.3em !important;  background:none; color:#3479bf; font-weight: bolder; " > <span class="glyphicon glyphicon-pencil" aria-hidden="true"  style="padding 0px !important;"></span> </button></td>';
+                    html += '<td  style="width:4%;"> <button type="button"  title="Delete driver" class="btn edit_driver" onclick="eliminar_driver(' + item.id_driver + ')" style="padding: 0em 0.3em !important; background:none; color:#3479bf; font-weight: bolder;"> <span class="glyphicon glyphicon-remove-sign" aria-hidden="true"  style="padding 0px !important;"></span> </button></td>';
+                    html += '</tr>';
+                });
+                $(".body_tabla_drivers").html(html);
+                $("#load_fantasy").css('display', 'none');
+            },
+            error: function (errormessage) { alert(errormessage.responseText); }
+        });
+    }
+    function obtener_carriers() {
+        $("#load_fantasy").css('display', 'inline');
+        $.ajax({
+            url: '/Shipping/buscar_carriers',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                var html = '<label class="">Carrier</label> <select class="form-control " id="caja_carrier" >';
+                $.each(result, function (key, item) {
+                    html += '<option  value="' + item.carrier + '">' + item.carrier + '</option>';
+                });
+                html += '</select>';
+                $("#carrier_div").html(html);
+                $("#load_fantasy").css('display', 'none');
+            }
+        });
+    }
+    function guardar_driver(event) {
+        var error = 0;
+        $(".check_driver").each(function () {
+            if ($(this).val() == '') {
+                $(this).css('border', '2px solid #e03f3f');
+                error++;
+            } else {
+                $(this).css('border', '1px solid #cccccc');
+            }
+        });
+       if (error == 0) {
+            $("#load_shipping").css('display', 'inline');
+           enviar_datos_driver();
+            $("#load_shipping").css('display', 'none');
+        } else {
+            $("#load_shipping").css('display', 'none');
+            event.preventDefault();
+            alertify.alert('Error!', 'Check empty fields, please');
+            return false;
+        }
+    }
+    function enviar_datos_driver() {
+        $.ajax({
+            url: '/Shipping/enviar_informacion_driver',
+            data: "{'carrier':'" + $("#caja_carrier").val() + "','nombre':'" + $("#caja_nombre_driver").val() + "','plates':'" + $("#caja_plates").val() + "','scac':'" + $("#caja_scac").val() + "','caat':'" + $("#caja_caat").val() + "','tractor':'" + $("#caja_tractor").val() + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                limpiar_driver();
+                obtener_drivers();
+                $("#formulario_nuevo_conductor").toggle("slow");
+                alertify.success('Succes! you can add another Id');
+                alertify.set('notifier', 'position', 'top-right');
+            }
+        });
+    }
+    function limpiar_driver() {
+        $(".check_driver").each(function () { $(this).val(''); });
+        $(".check_driver_edit").each(function () { $(this).val(''); });
+        $(".check_dir").each(function () { $(this).val(''); });
+        $(".check_dir_edit").each(function () { $(this).val(''); });
+    }
+    function modificar_driver(ID) {
+        obtener_carriers_edit();
+        $("#caja_id_driver").val(ID);
+        $.ajax({
+            url: '/Shipping/buscar_informacion_driver',
+            data: "{'id':'" + ID + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                $.each(result, function (key, item) {
+                    $("#caja_carrier_edit").val(item.carrier);
+                    $("#caja_nombre_driver_edit").val(item.driver_name);
+                    $("#caja_plates_edit").val(item.plates);
+                    $("#caja_scac_edit").val(item.scac);
+                    $("#caja_caat_edit").val(item.caat);
+                    $("#caja_tractor_edit").val(item.tractor);
+                });
+            }
+        });
+    }
+    $(document).on("dblclick", "#tabla_drivers tr", function () {
+        var row = this.rowIndex;
+        $("#editar_driver").css('display','inline');
+        modificar_driver($('#tabla_drivers tr:eq(' + row + ')  td:nth-child(1)').html());
+
+    });
+
+
+
+    function eliminar_driver(ID) {
+        $.ajax({
+            url: '/Shipping/eliminar_conductor',
+            data: "{'id':'" + ID + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                obtener_drivers();
+            }
+        });
+    }
+    function obtener_carriers_edit() {
+        $.ajax({
+            url: '/Shipping/buscar_carriers',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                var html = '<label class="">Carrier</label> <select class="form-control " id="caja_carrier_edit" >';
+                $.each(result, function (key, item) {
+                    html += '<option  value="' + item.carrier + '">' + item.carrier + '</option>';
+                });
+                html += '</select>';
+                $("#carrier_div_edit").html(html);
+            }
+        });
+    }
+    $(document).on("click", "#boton_formulario_nuevo_conductor", function () {
+        var texto = $("#boton_formulario_nuevo_conductor").text();
+        if (texto == 'New driver') {
+            $("#boton_formulario_nuevo_conductor").text('x');
+        } else {
+            $("#boton_formulario_nuevo_conductor").text('New driver');
+        }
+        $("#formulario_nuevo_conductor").toggle("slow");
+    });
+    $(document).on("click", ".edicion_driver", function () {
+        $("#editar_driver").toggle("slow");
+    });
+    function guardar_driver_edit(event) {
+        var error = 0;
+        $(".check_driver_edit").each(function () {
+            if ($(this).val() == '') {
+                $(this).css('border', '2px solid #e03f3f');
+                error++;
+            } else {
+                $(this).css('border', '1px solid #cccccc');
+            }
+        });
+        if (error == 0) {
+            $("#load_shipping").css('display', 'inline');
+            enviar_datos_driver_edicion();
+            $("#load_shipping").css('display', 'none');
+        } else {
+            $("#load_shipping").css('display', 'none');
+            event.preventDefault();
+            alertify.alert('Error!', 'Check empty fields, please');
+            return false;
+        }
+    }
+    function enviar_datos_driver_edicion() {
+        $.ajax({
+            url: '/Shipping/enviar_informacion_driver_edicion',
+            data: "{'id':'" + $("#caja_id_driver").val() + "','carrier':'" + $("#caja_carrier_edit").val() + "','nombre':'" + $("#caja_nombre_driver_edit").val() + "','plates':'" + $("#caja_plates_edit").val() + "','scac':'" + $("#caja_scac_edit").val() + "','caat':'" + $("#caja_caat_edit").val() + "','tractor':'" + $("#caja_tractor_edit").val() + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                limpiar_driver();
+                obtener_drivers();
+                $("#editar_driver").toggle("slow");
+                alertify.success('Changes saved!');
+                alertify.set('notifier', 'position', 'top-right');
+            }
+        });
+    }
+    /************************DIRECCIONES*********************************************************************************************************************/
+    function obtener_direcciones() {
+        $("#load_fantasy").css('display', 'inline');
+        $.ajax({
+            url: "/Shipping/buscar_direcciones_envio",
+            type: "POST",
+            contentType: "application/json;charset=utf-8",
+            dataType: "json",
+            success: function (result) {
+                var html = '';
+                $.each(result, function (key, item) {
+                    html += '<tr>';
+                    html += '<td style="width:5%;">' + item.id_direccion + '</td>';
+                    html += '<td  style="width:20%;">' + item.nombre + '</td>';
+                    html += '<td style="width:25%;">' + item.direccion + '</td>';
+                    html += '<td style="width:20%;">' + item.ciudad + '</td>';
+                    html += '<td style="width:20%;">' + item.zip + '</td>';
+                    html += '<td style="width:5%;"> <button type="button"  title="Edit address" class="btn edit_driver edit_direccion" onclick="modificar_direccion(' + item.id_direccion + ')" style="padding: 0em 0.3em !important;  background:none; color:#3479bf; font-weight: bolder; " > <span class="glyphicon glyphicon-pencil" aria-hidden="true"  style="padding 0px !important;"></span> </button></td>';
+                    html += '<td style="width:5%;"> <button type="button"  title="Delete address" class="btn edit_driver" onclick="eliminar_direccion(' + item.id_direccion + ')" style="padding: 0em 0.3em !important; background:none; color:#3479bf; font-weight: bolder;"> <span class="glyphicon glyphicon-remove-sign" aria-hidden="true"  style="padding 0px !important;"></span> </button></td>';
+                    html += '</tr>';
+                });
+                $(".body_tabla_direcciones").html(html);
+                $("#load_fantasy").css('display', 'none');
+            },
+            error: function (errormessage) { alert(errormessage.responseText); }
+        });
+    }
+    $(document).on("dblclick", "#tabla_direcciones tr", function () {
+        var row = this.rowIndex;
+        $("#editar_direccion").css('display', 'inline');
+        modificar_direccion($('#tabla_direcciones tr:eq(' + row + ')  td:nth-child(1)').html());
+
+    });
+    $(document).on("click", "#boton_formulario_nueva_direccion", function () {
+        var texto = $("#boton_formulario_nueva_direccion").text();
+        if (texto == 'New address') {
+            $("#boton_formulario_nueva_direccion").text('x');
+        } else {
+            $("#boton_formulario_nueva_direccion").text('New address');
+        }
+        $("#formulario_nueva_direccion").toggle("slow");
+    });
+    $(document).on("click", ".edit_direccion", function () { $("#editar_direccion").toggle("slow"); });
+    $(document).on("click", "#boton_cerrar_edicion_direccion", function () { $("#editar_direccion").toggle("slow"); });
+    $(document).on("click", "#boton_ocultar_formulario_nuevo_conductor", function () {
+        $("#formulario_nuevo_conductor").css('display', 'none');
+    });
+    $(document).on("click", "#boton_ocultar_edicion_conductor", function () { $("#editar_driver").css('display','none'); });
+    //oton_ocultar_edicion_conductor
+    function guardar_direccion(event) {
+        var error = 0;
+        $(".check_dir").each(function () {
+            if ($(this).val() == '') {
+                $(this).css('border', '2px solid #e03f3f');
+                error++;
+            } else {
+                $(this).css('border', '1px solid #cccccc');
+            }
+        });
+        if (error == 0) {
+            $("#load_shipping").css('display', 'inline');
+            enviar_datos_direccion();
+            $("#load_shipping").css('display', 'none');
+        } else {
+            $("#load_shipping").css('display', 'none');
+            event.preventDefault();
+            alertify.alert('Error!', 'Check empty fields, please');
+            return false;
+        }
+    }
+    function enviar_datos_direccion() {
+        $.ajax({
+            url: '/Shipping/enviar_informacion_direccion',
+            data: "{'nombre':'" + $("#caja_nombre_dir").val() + "','direccion':'" + $("#caja_direccion_dir").val() + "','ciudad':'" + $("#caja_ciudad_dir").val() + "','zip':'" + $("#caja_codigo_postal_dir").val() + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                limpiar_driver();
+                $("#formulario_nuevo_conductor").toggle("slow");
+                obtener_direcciones();
+                alertify.success('Changes saved!');
+                alertify.set('notifier', 'position', 'top-right');
+            }
+        });
+    }
+    function modificar_direccion(ID) {
+        $("#caja_id_direccion").val(ID);
+        $.ajax({
+            url: '/Shipping/buscar_modificar_edicion',
+            data: "{'id':'" + ID + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                $.each(result, function (key, item) {
+                    $("#caja_nombre_dir_edit").val(item.nombre);
+                    $("#caja_direccion_dir_edit").val(item.direccion);
+                    $("#caja_ciudad_dir_edit").val(item.ciudad);
+                    $("#caja_codigo_postal_dir_edit").val(item.zip);
+                });
+            }
+        });
+    }
+    function guardar_direccion_edicion(event) {
+        var error = 0;
+        $(".check_dir_edit").each(function () {
+            if ($(this).val() == '') {
+                $(this).css('border', '2px solid #e03f3f');
+                error++;
+            } else {
+                $(this).css('border', '1px solid #cccccc');
+            }
+        });
+        if (error == 0) {
+            $("#load_shipping").css('display', 'inline');
+            enviar_datos_direccion_edit();
+            $("#load_shipping").css('display', 'none');
+        } else {
+            $("#load_shipping").css('display', 'none');
+            event.preventDefault();
+            alertify.alert('Error!', 'Check empty fields, please');
+            return false;
+        }
+    }
+    function enviar_datos_direccion_edit() {
+        $.ajax({
+            url: '/Shipping/enviar_informacion_direccion_edicion',
+            data: "{'id':'" + $("#caja_id_direccion").val() + "','nombre':'" + $("#caja_nombre_dir_edit").val() + "','direccion':'" + $("#caja_direccion_dir_edit").val() + "','ciudad':'" + $("#caja_ciudad_dir_edit").val() + "','zip':'" + $("#caja_codigo_postal_dir_edit").val() + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                limpiar_driver();
+                obtener_direcciones();
+                $("#editar_direccion").toggle("slow");
+                alertify.success('Changes saved!');
+                alertify.set('notifier', 'position', 'top-right');
+            }
+        });
+    }
+    function eliminar_direccion(ID) {
+        $.ajax({
+            url: '/Shipping/eliminar_direccion',
+            data: "{'id':'" + ID + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                obtener_direcciones();
+            }
+        });
+    }
+    /*********CONTENEDORES************************************************************************************************************************************/
+    obtener_contenedores();
+    obtener_conductores();
+    obtener_direcciones_pk();
+    function obtener_contenedores() {
+        $("#loading_pk").css('display', 'inline');
+        $.ajax({
+            url: '/Shipping/buscar_contenedores_select',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                var html = '<label class="">Container&nbsp;</label> <select class="form-control pk " id="caja_contenedor_pk" >';
+                // var html = '<select class="form-control " id="caja_contenedor_pk" >';
+                $.each(result, function (key, item) {
+                    html += '<option  value="' + item.id_container + '">' + item.eco + '</option>';
+                });
+                html += '</select>';
+                $("#div_container").html(html);
+            }
+        });
+    }
+    function obtener_conductores() {
+        $.ajax({
+            url: '/Shipping/buscar_conductores_select',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                var html = '<label class="">Driver&nbsp;</label> <select class="form-control pk " id="caja_conductor_pk" >';
+                //var html = '<select class="form-control " id="caja_conductor_pk" >';
+                $.each(result, function (key, item) {
+                    html += '<option  value="' + item.id_driver + '">' + item.driver_name + '</option>';
+                });
+                html += '</select>';
+                $("#div_driver").html(html);
+            }
+        });
+    }
+    function obtener_direcciones_pk() {
+        $.ajax({
+            url: '/Shipping/buscar_direcciones_select',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                var html = '<label class="">Address&nbsp;</label> <select class="form-control pk" id="caja_direccion_pk" >';
+                //var html = '<select class="form-control " id="caja_direccion_pk" >';
+                $.each(result, function (key, item) {
+                    html += '<option  value="' + item.id_direccion + '">' + item.nombre + '</option>';
+                });
+                html += '</select>';
+                $("#div_shipto").html(html);
+                $("#loading_pk").css('display', 'none');
+            }
+        });
+    }
+    function obtener_estilos_tarimas(pedido) {
+        $("#load_fantasy").css('display', 'inline');
+        $.ajax({
+            url: "/Shipping/buscar_estilos_pk",
+            data:"{'pedido':'"+pedido+"'}",
+            type: "POST",
+            contentType: "application/json;charset=utf-8",
+            dataType: "json",
+            success: function (result) {
+                //<th>ID</th><th>PO NUM</th><th>STYLE</th><th>BOXES</th><th>DC</th>
+                var html = '';
+                var estilos,rows;
+                $.each(result, function (key, item) {
+                    estilos = 0;
+                    rows = 0;
+                    $.each(item.lista_estilos, function (key, i) {
+                        estilos++;
+                    });
+                    html += '<tr>';
+                    html += '<td >' + item.id_tarima + '</td>';
+
+                    html += '<td>  ';
+                    $.each(item.lista_estilos, function (key, i) {
+                        html += ' <p>' + i.number_po + '</p>';
+                    });
+                    html += '</td>';
+
+                    html += '<td>  ';
+                    $.each(item.lista_estilos, function (key, i) {
+                        html += ' <p>' + i.estilo + ' ' + i.descripcion + '</p>';
+                    });
+                    html += '</td>';
+
+                    html += '<td>  ';
+                    $.each(item.lista_estilos, function (key, i) {
+                        html += ' <p>' + i.boxes + '</p>';
+                    });
+                    html += '</td>';
+
+                    html += '<td>   ';
+                    $.each(item.lista_estilos, function (key, i) {
+                        if (i.dc == 0) {
+                            html += '<p>None</p>';
+                        } else {
+                            html += '<p>' + i.dc + '</p>';
+                        }
+                    });
+                    html += '</td>';
+                    html += '<td style="visibility:hidden; border: none; width:1em;"><input type="checkbox"  class="custom-control-input" id="cb_' + item.id_tarima + '"></td>';
+
+                    html += '</tr>';
+
+                });
+                //---ID----PO NUM-----STYLE-----BOXES-
+                $(".body_tabla_ids_estilos").html(html);
+                $("#div_tabla_estilos_pk").css('visibility','visible');
+                $("#load_fantasy").css('display', 'none');
+            },
+            error: function (errormessage) { alert(errormessage.responseText); }
+        });
+    }
+    $(document).on("dblclick", "#tabla_ids_estilos tr", function () {
+       /* var row = this.rowIndex;
+        //alert($('#items_recibos tr:eq('+row+') td:eq(0)').html()); //empieza las columas desde 0
+        //alert($('#items_recibos tr:eq(' + row + ') td:nth-child(2)').html());     //empieza las columnas desde 1
+        agregar_row($('#tabla_ids_estilos tr:eq(' + row + ') td:eq(1)').html() + "&" + $('#items_recibos tr:eq(' + row + ') td:eq(0)').html());*/
+    });
+    //CAMBIAR LOS ROW DE COLOR
+    var tarimas_seleccionadas=0;
+    $(document).on("click", "#tabla_ids_estilos tr", function () {
+        var row = this.rowIndex;
+        var chekbox = $('#tabla_ids_estilos tr:eq(' + row + ')  td:nth-child(1)').html();
+        if (this.style.background == "" || this.style.background == "white") {
+            $("#cb_" + chekbox).prop('checked', true);
+            $(this).css('background', '#46a772');
+            $(this).css('color', 'white');
+            tarimas_seleccionadas++;
+        } else {
+            $("#cb_" + chekbox).prop('checked', false);
+            $(this).css('background', 'white');
+            $(this).css('color', 'black');
+            tarimas_seleccionadas--;
+        }
+    });
+    var tarimas;
+
+    function enviar_datos_tarimas() {
+        $.ajax({
+            url: '/Shipping/guardar_pk',
+            data: "{'tarimas':'" + tarimas + "','po':'" + $("#caja_po_number_pk").val() + "','address':'" + $("#caja_direccion_pk").val() + "','driver':'" + $("#caja_conductor_pk").val() + "','container':'" + $("#caja_contenedor_pk").val() + "','seal':'" + $("#caja_seal_pk").val() + "','replacement':'" + $("#caja_replacement_pk").val() + "','manager':'" + $("#caja_manager_pk").val() + "','tipo':'" + $("#caja_tipo_pk").val()+"'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                $("#caja_po_number_pk").val('');
+                $(".body_tabla_ids_estilos").html('');
+                $("#div_tabla_estilos_pk").css('visibility', 'hidden');
+                $("#modal_packinglist").modal("hide");
+                $("#caja_seal_pk").val('');
+                $("#caja_replacement_pk").val('');
+                $("#caja_manager_pk").val('');
+                $("#caja_po_number_pk").val('');
+                obtener_pks('');
+                imprimir_pk();
+                //AQUI ALGO PARA IMPRIMIR EL PDF
+            }
+        });
+    }
+    function imprimir_pk() {
+        var h = screen.height - 100;
+        var w = screen.width - 30;
+        window.open('/PDF/imprimir_pk', '_blank', 'toolbar=0,location=0,menubar=0,width=' + w + ',height=' + h + ', fullscreen=yes');
+    }
+    function imprimir_bol() {
+       /* var h = screen.height - 100;
+        var w = screen.width - 30;
+        window.open('/PDF/imprimir_bol', '_blank', 'toolbar=0,location=0,menubar=0,width=' + w + ',height=' + h + ', fullscreen=yes');  */
+        var boton = document.getElementById('link_bol');
+        boton.click();
+        //setTimeout(function () { $("#espera").css('display', 'none'); }, 10000);
+    }
+    function ver_bol(id) {
+        $.ajax({
+            url: '/Shipping/abrir_pk',
+            data: "{'id':'" + id + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                imprimir_bol();
+            }
+        });
+    }
+
+    /*********************************************************************************************************************************************/
+
+
+
+
+    var columnas_estilos_dc; var number_po;
+
+
+
+
+
+
+
+
+
+
+
+    /*********************************************************************************************************************************************/
+    $(document).on("input", ".pedidos_stock", function () { $('.pedidos_stock').autocomplete({ source: '@Url.Action("Autocomplete_po")' }); });
+    $(document).on("click", "#boton_stock_fantasy", function () {
+        $("#load_shipping").css('display', 'inline');
+
+        agregar_stock();
+        $("#load_shipping").css('display', 'none');
+    });
+
+    function cargar_estilos_ordenes_stock() {
+        $.ajax({
+            url: '/Fantasy/buscar_estilos_fantasy',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                var html = '';
+                //html = '<label class=" col-form-label">Style</label>';
+                html += ' <select class="form-control " id="caja_estilo_orden" >';
+                $.each(result, function (key, item) {
+                    html += '<option  value="' + item.id_estilo_fantasy + '">' + (item.estilo).trim() + " " + (item.descripcion).trim() + '</option>';
+                });
+                html += '</select>';
+                estilos_fantasy_lista = html;
+                $(".estilos_stock").html(html);
+                $("#load_shipping").css('display', 'none');
+            }
+        });
+    }//deleteRowEstilosStock
+    $(document).on("click", ".deleteRowEstilosStock", function () {
+        $(this).closest("tr").remove();
+        rows_stock--;
+        if (rows_stock <= 0) {
+            $("#modal_stock").modal("hide");
+        } else {
+            $('#tabla_stock_fantasy').css('visibility', 'visible');
+        }
+    });
+    function agregar_stock() {//<tr><<th>PO</th><th>SM</th><th>MD</th><th>LG</th><th>XL</th><th>2X</th><th>-</th></tr>
+        var html = '<tr>';
+        //html += estilos_fantasy_lista;
+        html += '<td>' + estilos_fantasy_lista+'</td>';
+        html += '<td> <input type="text" class=" form-control pedidos_stock order validacion"   maxlength="30" id="caja_estilo"></td>';
+        html += '<td><input  style="width:8em;" type="text" class=" form-control numeric stock"   value="0" maxlength="10" id="caja_sm"></td>';
+        html += '<td><input  style="width:8em;" type="text" class=" form-control numeric stock"   value="0" maxlength="10" id="caja_sm"></td>';
+        html += '<td><input  style="width:8em;" type="text" class=" form-control numeric stock"   value="0" maxlength="10" id="caja_sm"></td>';
+        html += '<td><input  style="width:8em;" type="text" class=" form-control numeric stock"   value="0" maxlength="10" id="caja_sm"></td>';
+        html += '<td><input  style="width:8em;" type="text" class=" form-control numeric stock"   value="0" maxlength="10" id="caja_sm"></td>';
+        html += '<td><button type="button"  title="Delete row"  class="btn btn-light deleteRowEstilosStock"><b>-</b></button></td></tr>';
+        rows_stock++;
+        $('#tabla_stock_fantasy').css('visibility', 'visible');
+        $('.body_tabla_stock_fantasy').append(html);
+    }
+    var estilo_stock,  po_stock, sm, md, lg, xl, xx;
+    function guardar_stock(event) {
+        estilo_stock = ''; po_stock = ''; sm = ''; md = ''; lg = ''; xl = ''; xx = '';
+        if (rows_stock < 1) { error++; }
+        var valores = 0;
+        var error = 0;
+        $(".stock").each(function () {
+            if ($(this).val() != '0' && $(this).val() != '') { valores++; }
+            if ($(this).val() == '') {
+                $(this).css('border', '2px solid #e03f3f');
+                error++;
+            } else {
+                $(this).css('border', '1px solid #cccccc');
+            }
+        });
+        if (valores == 0) { error++;}
+        if ($("#caja_cliente_orden").val() == "0") { error++; }
+        $('#tabla_tallas_fantasy tbody tr').each(function () {
+            if ($(this).find('td:eq(2) input').val() == "0" && $(this).find('td:eq(3) input').val() == "0" && $(this).find('td:eq(4) input').val() == "0" && $(this).find('td:eq(5) input').val() == "0" && $(this).find('td:eq(6) input').val() == "0") { error++; }
+        });
+        if (error == 0) {//th>Style</th><th>PO</th><th>SM</th><th>MD</th><th>LG</th><th>XL</th><th>2X</th
+            $("#load_fantasy").css('display', 'inline');
+            $('#tabla_stock_fantasy tbody tr').each(function () {
+                estilo_stock += "*" + $(this).find("select option:selected").val();
+                po_stock += "*" + $(this).find('td:eq(1) input').val();
+                if ($(this).find('td:eq(2) input').val() == '') { sm += "*0"; } else { sm += "*" + $(this).find('td:eq(2) input').val(); }
+                if ($(this).find('td:eq(3) input').val() == '') { md += "*0"; } else { md += "*" + $(this).find('td:eq(3) input').val(); }
+                if ($(this).find('td:eq(4) input').val() == '') { lg += "*0"; } else { lg += "*" + $(this).find('td:eq(4) input').val(); }
+                if ($(this).find('td:eq(5) input').val() == '') { lx += "*0"; } else { xl += "*" + $(this).find('td:eq(5) input').val(); }
+                if ($(this).find('td:eq(6) input').val() == '') { xx += "*0"; } else { xx += "*" + $(this).find('td:eq(6) input').val(); }
+            });
+            enviar_datos_order();
+            $("#load_fantasy").css('display', 'none');
+        } else {
+            $("#load_fantasy").css('display', 'none');
+            event.preventDefault();
+            alertify.alert('Error!', 'Check empty fields, please');
+            return false;
+        }
+    }
+    function enviar_datos_order() {
+        $.ajax({
+            url: '/Fantasy/agregar_inventario_fantasy',
+            data: "{'estilo':'" + estilo_stock + "','talla_sm':'" + sm + "','talla_md':'" + md + "','talla_lg':'" + lg + "','talla_xl':'" + xl + "','talla_xx':'" + xx + "','pedido':'" + po_stock + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                $('.body_tabla_stock_fantasy').html("");
+                $("#modal_stock").modal("hide");
+                batch = result;
+                alertify.success('Success!');
+                alertify.set('notifier', 'position', 'top-right');
+            }
+        });
+
+    }
+
+
+
+
+    /*********************************************************************************************************************************************/
+    /*****REPORTES****************************************************************************************************************************************/
+    //caja_rep1_inicio
+    $(function () {
+        $.datepicker.regional['en'] = {
+            /*closeText: 'Cerrar',
+            prevText: '<Ant',
+            nextText: 'Sig>',
+            currentText: 'Hoy',
+            monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+            monthNamesShort: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+                'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+            dayNames: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+            dayNamesShort: ['Dom', 'Lun', 'Mar', 'Mié', 'Juv', 'Vie', 'Sáb'],
+            dayNamesMin: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'],
+            weekHeader: 'Sm',*/
+            dateFormat: 'yy-mm-dd',
+            firstDay: 1,
+            isRTL: false,
+            showMonthAfterYear: false,
+            yearSuffix: ''
+        };
+        $.datepicker.setDefaults($.datepicker.regional['en']);
+        $('#caja_rep1_inicio').datepicker();
+        $('#caja_rep1_final').datepicker();
+    });
+
+    function enviar_fechas_reporte(event) {
+        if ($('#caja_rep1_inicio').val() != '' && $("#caja_rep1_final").val() != '') {
+            $.ajax({
+                url: '/Shipping/fechas_reporte',
+                data: "{'inicio':'" + $("#caja_rep1_inicio").val() + "','final':'" + $("#caja_rep1_final").val() + "'}",
+                contentType: 'application/json',
+                dataType: 'json',
+                type: 'post',
+                success: function (result) {
+                    $('#caja_rep1_inicio').val('');
+                    $("#caja_rep1_final").val('');
+                    $("#modal_fechas_ordenes_abiertas").modal("hide");
+                    return false;
+                }
+            });
+            reporte_po_abierto();
+        } else {
+            event.preventDefault();
+            if ($('#caja_rep1_inicio').val() == '') { $('#caja_rep1_inicio').css('border', '2px solid #e03f3f'); } else { $('#caja_rep1_inicio').css('border', '1px solid #cccccc'); }
+            if ($('#caja_rep1_final').val() == '') { $('#caja_rep1_final').css('border', '2px solid #e03f3f'); } else { $('#caja_rep1_final').css('border', '1px solid #cccccc'); }
+            alertify.alert('Error!', 'Check empty fields, please');
+            return false;
+        }
+    }
+    function reporte_po_abierto() {
+        $("#espera").css('display', 'inline');
+        var boton = document.getElementById('reporte1');
+        boton.click();
+        setTimeout(function () { $("#espera").css('display', 'none'); }, 10000);
+    }
+    $(document).on("input", ".ordersc", function () { $('.ordersc').autocomplete({ source: '@Url.Action("Autocomplete_po_abiertos")' }); });
+    function close_order(event) {
+        if ($('#caja_order_close').val() != '') {
+            $('#caja_order_close').css('border', '1px solid #cccccc');
+            $.ajax({
+                url: '/Shipping/cerrar_po',
+                data: "{'po':'" + $("#caja_order_close").val() + "'}",
+                contentType: 'application/json',
+                dataType: 'json',
+                type: 'post',
+                success: function (result) {
+                    //$("#modal_cerrar_pedido").modal("hide");
+                    $('#caja_order_close').val('');
+                    /*alertify.success('Success!');
+                    alertify.set('notifier', 'position', 'top-right');*/
+                }
+            });
+        } else {
+            event.preventDefault();
+            $('#caja_order_close').css('border', '2px solid #e03f3f');
+            alertify.alert('Error!', 'Check empty fields, please');
+            return false;
+        }
+    }
+
+    function estado_estilos_orden(event) {
+        if ($('#caja_order_status').val() != '') {
+            $('#caja_order_status').css('border', '1px solid #cccccc');
+            $.ajax({
+                url: '/Shipping/po_reporte',
+                data: "{'po':'" + $("#caja_order_status").val() + "'}",
+                contentType: 'application/json',
+                dataType: 'json',
+                type: 'post',
+                success: function (result) {
+                    $('#caja_order_status').val('');
+                    $("#modal_estado_envio_estilos").modal("hide");
+                    return false;
+                }
+            });
+            reporte_estado_po();
+        } else {
+            event.preventDefault();
+            $('#caja_order_status').css('border', '2px solid #e03f3f');
+            alertify.alert('Error!', 'Check empty fields, please');
+            return false;
+        }
+    }
+    function reporte_estado_po() {
+        $("#espera").css('display', 'inline');
+        var boton = document.getElementById('reporte_estados');
+        boton.click();
+        setTimeout(function () { $("#espera").css('display', 'none'); }, 10000);
+    }
+
+    $(document).on("input", ".styles", function () { $('.styles').autocomplete({ source: '@Url.Action("Autocomplete_estilos")' }); });
+    function ordenes_por_estilo(event) {
+        if ($('#caja_style_po').val() != '') {
+            $('#caja_style_po').css('border', '1px solid #cccccc');
+            $.ajax({
+                url: '/Shipping/estilo_reporte',
+                data: "{'estilo':'" + $("#caja_style_po").val() + "'}",
+                contentType: 'application/json',
+                dataType: 'json',
+                type: 'post',
+                success: function (result) {
+                    $('#caja_style_po').val('');
+                    $("#modal_pos_mismo_estilo").modal("hide");
+                    return false;
+                }
+            });
+            reporte_pos_estilo();
+        } else {
+            event.preventDefault();
+            $('#caja_order_status').css('border', '2px solid #e03f3f');
+            alertify.alert('Error!', 'Check empty fields, please');
+            return false;
+        }
+    }
+    function reporte_pos_estilo() {
+        $("#espera").css('display', 'inline');
+        var boton = document.getElementById('reporte_pos_estilo');
+        boton.click();
+        setTimeout(function () { $("#espera").css('display', 'none'); }, 3000);
+    }
+    /*********************************************************************************************************************************************/
+
+
+    function llenar_years() {
+        var html = '<label class=" col-form-label">Year</label> <select class="form-control " id="caja_fecha_pk" >';
+        var d = new Date();
+        var year = d.getFullYear();
+        for (var i = year; i >= year-10; i--) {
+            html += '<option  value="' + i + '">' + i + '</option>';
+        }
+        html += '</select>';
+        $("#div_fecha_pk").html(html);
+        $("#loading").css('display', 'none');
+    }
+    function packing_list(event) {
+        $.ajax({
+            url: '/Shipping/year_report',
+            data: "{'year':'" + $("#caja_fecha_pk").val() + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                $("#modal_packing_fecha").modal("hide");
+                return false;
+            }
+        });
+        reporte_year();
+    }
+    function reporte_year() {
+        $("#espera").css('display', 'inline');
+        var boton = document.getElementById('reporte_year');
+        boton.click();
+        setTimeout(function () { $("#espera").css('display', 'none'); }, 3000);
+    }
+    /*********************************************************************************************************************************************/
+    function ver_estado_orden(event) {
+        if ($('#caja_orden_faltantes').val() != '') {
+            $('#caja_orden_faltantes').css('border', '1px solid #cccccc');
+            $.ajax({
+                url: '/Shipping/po_reporte',
+                data: "{'po':'" + $("#caja_orden_faltantes").val() + "'}",
+                contentType: 'application/json',
+                dataType: 'json',
+                type: 'post',
+                success: function (result) {
+                    $("#modal_orden_abierta").modal("hide");
+                    $('#caja_orden_faltantes').val('');
+                    /*alertify.success('Success!');
+                    alertify.set('notifier', 'position', 'top-right');*/
+                    return false;
+                }
+            });
+            abrir_reporte_estado_orden();
+        } else {
+            event.preventDefault();
+            $('#caja_orden_faltantes').css('border', '2px solid #e03f3f');
+            alertify.alert('Error!', 'Check empty fields, please');
+            return false;
+        }
+    }
+    function abrir_reporte_estado_orden() {
+        $("#espera").css('display', 'inline');
+        var boton = document.getElementById('reporte_estado_orden');
+        boton.click();
+        setTimeout(function () { $("#espera").css('display', 'none'); }, 3000);
+    }
+    /*********************************************************************************************************************************************/
+    //
+    function abrir_reporte_historial() {
+        $("#espera").css('display', 'inline');
+        var boton = document.getElementById('reporte_historial_ordenes');
+        boton.click();
+        setTimeout(function () { $("#espera").css('display', 'none'); }, 3000);
+    }
+
+    window.onload = function () {
+        var a = document.getElementById("link");
+        a.onclick = function () {
+            $("#espera").css('display', 'inline');
+            var boton = document.getElementById('reporte_historial_ordenes');
+            boton.click();
+            setTimeout(function () { $("#espera").css('display', 'none'); }, 3000);
+            return false;
+        }
+    }
+    $(document).on("click", "a", function () {
+        //setTimeout(function () { $("#loading").css('display', 'none'); }, 1000);
+        $("#loading").css('display', 'none');
+    });
+    /*********************************************************************************************************************************************/
+    /*********************************************************************************************************************************************/
+    /************************DIRECCIONES*********************************************************************************************************************/
+    function obtener_contenedores() {
+        $.ajax({
+            url: "/Shipping/buscar_contenedores",
+            type: "POST",
+            contentType: "application/json;charset=utf-8",
+            dataType: "json",
+            success: function (result) {
+                var html = '';
+                $.each(result, function (key, item) {
+                    html += '<tr>';
+                    html += '<td style="width:5%;">' + item.id_container + '</td>';
+                    html += '<td style="width:45%;">' + item.eco + '</td>';
+                    html += '<td style="width:40%;">' + item.plates + '</td>';
+                    html += '<td style="width:5%;"> <button type="button"  title="Edit container" class="btn edit_driver edit_contenedor" onclick="modificar_contenedor(' + item.id_container + ')" style="padding: 0em 0.3em !important;  background:none; color:#3479bf; font-weight: bolder; " > <span class="glyphicon glyphicon-pencil" aria-hidden="true"  style="padding 0px !important;"></span> </button></td>';
+                    html += '<td style="width:5%;"> <button type="button"  title="Delete container" class="btn edit_driver" onclick="eliminar_contenedor(' + item.id_container + ')" style="padding: 0em 0.3em !important; background:none; color:#3479bf; font-weight: bolder;"> <span class="glyphicon glyphicon-remove-sign" aria-hidden="true"  style="padding 0px !important;"></span> </button></td>';
+                    html += '</tr>';
+                });
+                $(".body_tabla_contenedores").html(html);
+            },
+            error: function (errormessage) { alert(errormessage.responseText); }
+        });
+    }
+    $(document).on("click", "#boton_menu_contenedores", function () { obtener_contenedores(); });
+    $(document).on("dblclick", "#tabla_contenedores tr", function () {
+        var row = this.rowIndex;
+        $("#editar_contenedor").css('display', 'inline');
+        modificar_contenedor($('#tabla_contenedores tr:eq(' + row + ')  td:nth-child(1)').html());
+
+    });
+    $(document).on("click", "#boton_formulario_nuevo_contenedor", function () {
+        var texto = $("#boton_formulario_nuevo_contenedor").text();
+        if (texto == 'New container') {
+            $("#boton_formulario_nuevo_contenedor").text('x');
+        } else {
+            $("#boton_formulario_nuevo_contenedor").text('New container');
+        }
+        $("#formulario_nuevo_contenedor").toggle("slow");
+    });
+
+    $(document).on("click", ".edit_contenedor", function () { $("#editar_contenedor").toggle("slow"); });
+    $(document).on("click", "#boton_cerrar_edicion_contenedor", function () { $("#editar_contenedor").toggle("slow"); });
+    $(document).on("click", "#boton_ocultar_formulario_nuevo_contenedor", function () {
+        $("#formulario_nuevo_contenedor").css('display', 'none');
+    });
+    $(document).on("click", "#boton_ocultar_edicion_contenedor", function () { $("#editar_contenedor").css('display', 'none'); });
+
+    //oton_ocultar_edicion_conductor
+    function guardar_contenedor(event) {
+        var error = 0;
+        $(".check_con").each(function () {
+            if ($(this).val() == '') {
+                $(this).css('border', '2px solid #e03f3f');
+                error++;
+            } else {
+                $(this).css('border', '1px solid #cccccc');
+            }
+        });
+        if (error == 0) {
+            $("#load_shipping").css('display', 'inline');
+            enviar_datos_contenedor();
+            $("#load_shipping").css('display', 'none');
+        } else {
+            $("#load_shipping").css('display', 'none');
+            event.preventDefault();
+            alertify.alert('Error!', 'Check empty fields, please');
+            return false;
+        }
+    }
+    function enviar_datos_contenedor() {
+        $.ajax({
+            url: '/Shipping/enviar_informacion_contenedor',
+            data: "{'eco':'" + $("#caja_eco_con").val() + "','plates':'" + $("#caja_plates_con").val() + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                $("#caja_eco_con").val("");
+                $("#caja_plates_con").val("");
+                $("#formulario_nuevo_contenedor").toggle("slow");
+                obtener_contenedores();
+                alertify.success('Changes saved!');
+                alertify.set('notifier', 'position', 'top-right');
+            }
+        });
+    }
+    function modificar_contenedor(ID) {
+        $("#caja_id_contenedor_id").val(ID);
+        $.ajax({
+            url: '/Shipping/buscar_modificar_contenedor',
+            data: "{'id':'" + ID + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                $.each(result, function (key, item) {
+                    $("#caja_id_contenedor_edit").val(item.id_container);
+                    $("#caja_eco_con_edit").val(item.eco);
+                    $("#caja_plates_con_edit").val(item.plates);
+                });
+            }
+        });
+    }
+    function guardar_contenedor_edicion(event) {
+        var error = 0;
+        $(".check_con_edit").each(function () {
+            if ($(this).val() == '') {
+                $(this).css('border', '2px solid #e03f3f');
+                error++;
+            } else {
+                $(this).css('border', '1px solid #cccccc');
+            }
+        });
+        if (error == 0) {
+            $("#load_shipping").css('display', 'inline');
+            enviar_datos_contenedor_edit();
+            $("#load_shipping").css('display', 'none');
+        } else {
+            $("#load_shipping").css('display', 'none');
+            event.preventDefault();
+            alertify.alert('Error!', 'Check empty fields, please');
+            return false;
+        }
+    }
+    function enviar_datos_contenedor_edit() {
+        $.ajax({
+            url: '/Shipping/enviar_informacion_contenedor_edicion',
+            data: "{'id':'" + $("#caja_id_contenedor_edit").val() + "','eco':'" + $("#caja_eco_con_edit").val() + "','plates':'" + $("#caja_plates_con_edit").val() + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                $("#caja_id_contenedor_edit").val("");
+                $("#caja_eco_con_edit").val("");
+                $("#caja_plates_con_edit").val("");
+                obtener_contenedores();
+                $("#editar_contenedor").toggle("slow");
+                alertify.success('Changes saved!');
+                alertify.set('notifier', 'position', 'top-right');
+            }
+        });
+    }
+    function eliminar_contenedor(ID) {
+        $.ajax({
+            url: '/Shipping/eliminar_contenedor',
+            data: "{'id':'" + ID + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                obtener_contenedores();
+            }
+        });
+    }
+    /*********CONTENEDORES************************************************************************************************************************************/
+    /*********************************************************************************************************************************************/
+    function busqueda_extras_pk() {
+        //alert($("#caja_buscar_estilos_extras").val());
+        obtener_estilos_extras($("#caja_buscar_estilos_extras").val());
+    }
+    var columas_otros_tallas;
+    function obtener_estilos_extras(id) {
+        //$("#load_shipping").css('display', 'inline');
+        $(".rows_estilos_otros").html("");
+        if (id == '') {
+            id = 0;
+        }
+        $.ajax({
+            url: '/Shipping/buscar_estilos_pk_extras',
+            data: "{'id':'" + id + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (jsonData) {
+                var lista_estilo = jsonData.Data.estilos_busqueda;
+                //tallas_extras = jsonData.Data.tallas;
+                //number_po = jsonData.Data.po_number;
+                var html = '';
+                $.each(lista_estilo, function (key, item) {
+                    if (item.tipo_empaque == 1 || item.tipo_empaque == 2 || item.tipo_empaque == 3) {
+                        tipo_packing = item.tipo_empaque;
+                    }
+                    html += '<tr>';
+                    html += '<td>' + item.id_summary + '</td>';
+                    html += '<td>' + item.estilo +' '+item.po+ '</td>';
+                    html += '<td>' + item.descripcion + '</td>';
+                    html += '<td>' + item.color + '</td>';
+                    html += '</tr>';
+                });
+                //$("#div_estilos_otros").css('display', 'inline');
+                $(".rows_estilos_otros").append(html);
+                //************************************************************
+                $("#div_otros_tallas").css('display', 'inline');
+                /*columnas_dc = 0;//same que el de abajo
+                columnas_estilos_dc = '';//USAR SOLAMENTE CUANDO ES OTROS
+                var html = '<td><select class="form-control dc_estilos"  ><option  value="0" selected>#</option></select></td>';
+                html += '<td><select class="form-control dc_estilos"  ><option  value="0" selected>Style</option></select></td>';
+                html += '<td><select class="form-control dc_estilos"  ><option  value="0" selected>Type</option></select></td>';
+                var x = 0;
+                $.each(tallas_extras, function (key, i) {
+                    html += '<td><select class="form-control dc_estilos"  ><option  value="' + i.id_talla + '" selected>' + i.talla + '</option></select></td>';
+
+                });
+                html += '<td></td>'; //
+                $(".cabeceras_otros").html(html);*/
+                estilos_seleccionados = 0;
+                $("#modal_shipping_ratio").modal("show");
+               // $("#load_shipping").css('display', 'none');
+            }//success
+        });
+    }
+    var contador_tallas_extras;
+    $(document).on("dblclick", "#tabla_estilos_otros tr", function () {
+        var row = this.rowIndex;
+        if (row != 0) {
+            agregar_row_otros($('#tabla_estilos_otros tr:eq(' + row + ') td:eq(0)').html() + "&" + $('#tabla_estilos_otros tr:eq(' + row + ') td:eq(1)').html() + "-" + $('#tabla_estilos_otros tr:eq(' + row + ') td:eq(2)').html());
+        }
+    });
+
+    function agregar_row_otros(ID) {
+        var data = ID.split("&");
+
+        var html = '<tr>' +
+            '<td><input readonly  class="validacion form-control estilos_tablas"  value="' + data[0] + '"  /></td>' +
+            '<td>' + data[1].replace(/\s/g, '') + '</td>';
+        html += '<td><input class="validacion form-control " style="width: 6em !important;" id="" value="" /></td>';
+        html += '<td><select class="form-control js-example-basic-single "  >' +
+            '<option>DMG</option><option>EXT</option><option>EXAMPLES</option>'; //<option>EXT</option><option>DMG</option>
+        html += '</select ></td>';
+
+        $.each(tallas_extras, function (key, i) {
+            html += '<td><input   maxlength="6" class="numeric form-control check_item_otros  " id="" value="0" /></td>';  //boxes
+        });
+        html += '<td><button type="button" title="Delete row" class="btn btn-light deleteRowOtros"><b>-</b></button></td></tr>';
+        estilos_seleccionados++;
+        $('#div_otros_tallas').css('visibility', 'visible');
+        $('.rows_otros').append(html);
+    }
+    function add_others(id) {
+        $("#load_shipping").css('display', 'inline');
+        $(".rows_estilos_otros").html("");
+        $.ajax({
+            url: '/Shipping/buscar_estilos_pk_otros',
+            data: "{'id':'" + id + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (jsonData) {
+                columas_otros_tallas = '';
+                contador_tallas_extras = 0;
+                var lista_estilo = jsonData.Data.estilos;
+                tallas_extras = jsonData.Data.tallas;
+                number_po = jsonData.Data.po_number;
+                var html = '';
+                $.each(lista_estilo, function (key, item) {
+                    if (item.tipo_empaque == 1 || item.tipo_empaque == 2 || item.tipo_empaque == 3) {
+                        tipo_packing = item.tipo_empaque;
+                    }
+                    html += '<tr>';
+                    html += '<td>' + item.id_summary + '</td>';
+                    html += '<td>' + item.estilo + ' ' + item.po + '</td>';
+                    html += '<td>' + item.descripcion + '</td>';
+                    html += '<td>' + item.color + '</td>';
+                    html += '</tr>';
+                });
+                $("#div_estilos_otros").css('display', 'inline');
+                $(".rows_estilos_otros").append(html);
+                //************************************************************
+                //$("#div_otros_tallas").css('display', 'inline');
+                columnas_dc = 0;//same que el de abajo
+                columnas_estilos_dc = '';//USAR SOLAMENTE CUANDO ES OTROS
+                var html = '<td><select class="form-control dc_estilos"  ><option  value="0" selected>#</option></select></td>';
+                html += '<td><select class="form-control dc_estilos"  ><option  value="0" selected>Style</option></select></td>';
+                html += '<td><select class="form-control dc_estilos"  ><option  value="0" selected>Ext</option></select></td>';
+                html += '<td><select class="form-control dc_estilos"  ><option  value="0" selected>Type</option></select></td>';
+                var x = 0;
+                columas_otros_tallas = 'SUMMARY*EXT*TIPO';
+                $.each(tallas_extras, function (key, i) {
+                    html += '<td><select class="form-control dc_estilos"  ><option  value="' + i.id_talla + '" selected>' + i.talla + '</option></select></td>';
+                    columas_otros_tallas += "*" + i.id_talla;
+                    contador_tallas_extras++;
+                });
+                html += '<td></td>'; //
+                $(".cabeceras_otros").html(html);
+                estilos_seleccionados = 0;
+                $("#modal_shipping_ratio").modal("show");
+                $("#load_shipping").css('display', 'none');
+            }       //success
+        });
+    }
+
+    $(document).on("click", ".deleteRowOtros", function () {
+        $(this).closest("tr").remove();
+        estilos_seleccionados--;
+        if (estilos_seleccionados <1) {
+            $('#div_otros_tallas').css('visibility', 'hidden');
+        } else {
+            $('#div_otros_tallas').css('visibility', 'visible');
+        }
+    });
+
+    function limpiar_otros() {
+        $(".rows_estilos_otros").html('');
+        $(".cabeceras_otros").html('');
+        $(".rows_otros").html('');
+        $("#div_estilos_otros").css('display', 'none');
+    }
+    $(document).on("click", ".cerrar_extras", function () {
+        limpiar_otros();
+    });
+    var row_otro;
+    function guardar_estilos_otros(event) {
+        var error = 0;
+        var ceros = 0;
+
+        $(".check_item_otros").each(function () {
+            if ($(this).val() != 0) { ceros++; }
+            if ($(this).val() == '') {
+                $(this).css('border', '2px solid #e03f3f');
+                error++;
+            } else {
+                $(this).css('border', '1px solid #cccccc');
+            }
+        });
+        if (ceros == 0) { error++; }
+        if (error == 0) {
+            row_otro = []; var row;
+            row_otro.push(columas_otros_tallas);
+            $('#tabla_otros tbody tr').each(function () {
+                row = $(this).find('td:eq(0) input').val() + '*' + $(this).find('td:eq(2) input').val() + '*'+ $(this).find("select option:selected").text();
+                i = 4;
+                for (var counter = 4; counter < (contador_tallas_extras+4); counter++) {
+                    row += "*" + $(this).find('td:eq(' + counter + ') input').val();
+                }
+                row_otro.push(row);
+            });
+            enviar_otros();
+            $("#loading_pk").css('display', 'none');
+        } else {
+            $("#loading_pk").css('display', 'none');
+            event.preventDefault();
+            alertify.alert('Error!', 'Check empty fields, please');
+            return false;
+        }
+    }
+    function enviar_otros() {
+       // var actionData = "{'estilos':'" + columnas_estilos_dc + "','rows':'" + row_otro + "','number_po':'" + number_po + "'}";
+        var actionData = "{'rows':'" + row_otro + "'}";
+        $.ajax({
+            url: '/Shipping/agregar_otros_estilos',
+            data: actionData,
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                alertify.success('Succes!');
+                alertify.set('notifier', 'position', 'top-right');
+                $("#modal_shipping_ratio").modal("hide");
+                limpiar_otros();
+
+            }
+        });
+    }
+
+
+    /*********************************************************************************************************************************************/
+    /*********************************************************************************************************************************************/
+    $(document).on("click", ".abrir_reporte_mde", function () {
+        llenar_packing_reporte_mde();
+    });
+    function llenar_packing_reporte_mde() {
+        $("#load_shipping").css('display', 'inline');
+        $.ajax({
+            url: "/Shipping/buscar_lista_packings",
+            type: "POST",
+            contentType: "application/json;charset=utf-8",
+            dataType: "json",
+            success: function (jsonData) {
+                var html = '';
+                var lista_packing = jsonData.Data.packings;
+                $.each(lista_packing, function (key, item) {
+                    html += '<tr>';
+                    html += '<td style="width:5%;">' + item.id_packing_list  + '</td>';
+                    html += '<td style="width:21%;">' + item.packing + '</td>';
+                    if (item.id_pedido != 0) { html += '<td style="width:20%;">' + item.pedido + '</td>'; }
+                    else { html += '<td style="width:20%;"> </td>'; }
+
+                    if (item.id_tipo != 3 && item.id_tipo != 5 && item.id_tipo != 6 && item.id_tipo != 7) {
+                        if (item.customer != 0 && item.customer_po != 0) {
+                            html += '<td style="width:30%;">' + item.customer + ' / ' + item.customer_po + '</td>';
+                        } else { html += '<td style="width:30%;"> </td>'; }
+                    } else {
+                        switch (item.id_tipo) {
+                            case 3: html += '<td style="width:30%;">Samples</td>';
+                                break;
+                            case 5: html += '<td style="width:30%;">Returns</td>';
+                                break;
+                            case 6: html += '<td style="width:30%;">Fantasy DMG/EXT</td>';
+                                break;
+                            case 7: html += '<td style="width:30%;">Hot topic</td>';
+                                break;
+                        }
+                    }
+                    html += '<td style="width:19%">' + item.fecha + ' </td>';
+                    html += '<td style="visibility:hidden; width:5%;"><input type="checkbox"  class="custom-control-input" id="cbmde_' + item.id_packing_list + '"></td>';
+                    html += '</tr>';
+                });
+                $(".rows_tabla_packing_mde").html(html);
+                 $("#load_shipping").css('display', 'none');
+            },
+            error: function (errormessage) { alert(errormessage.responseText); }
+        });
+    }
+    var mde_seleccionados = 0;
+    $(document).on("click", "#tabla_packing_mde tr", function () {
+        var row = this.rowIndex;
+        var chekbox = $('#tabla_packing_mde tr:eq(' + row + ')  td:nth-child(1)').html();
+        if (this.style.background == "" || this.style.background == "white") {
+            $("#cbmde_" + chekbox).prop('checked', true);
+            $(this).css('background', '#46a772');
+            $(this).css('color', 'white');
+            mde_seleccionados++;
+        } else {
+            $("#cbmde_" + chekbox).prop('checked', false);
+            $(this).css('background', 'white');
+            $(this).css('color', 'black');
+            mde_seleccionados--;
+        }
+    });
+    var packings_reporte_mde;
+    function guardar_packings_mde(event) {
+        if (mde_seleccionados != 0) {
+            $("#load_shipping").css('display', 'inline');
+            packings_reporte_mde = '';
+            $('#tabla_packing_mde tbody tr').each(function () {
+                if ($(this).find('td:eq(5) input').is(":checked")) {
+                    packings_reporte_mde += "*" + $(this).find('td:eq(0) ').html();
+                }
+            });
+            $.ajax({
+                url: '/Shipping/guardar_id_reporte_mde',
+                data: "{'packing':'" + packings_reporte_mde + "'}",
+                contentType: 'application/json',
+                dataType: 'json',
+                type: 'post',
+                success: function (result) {
+                    $('#modal_mde_reporte').modal('hide');
+                    var boton = document.getElementById('reporte_mde');
+                    boton.click();
+                    setTimeout(function () { $("#espera").css('display', 'none'); }, 3000);
+                   // $("#load_shipping").css('display', 'none');
+                }
+            });
+            $("#load_shipping").css('display', 'none');
+        } else {
+            $("#load_shipping").css('display', 'none');
+            event.preventDefault();
+            event.preventDefault();
+            alertify.alert('Error!', 'Check empty fields, please');
+            return false;
+        }
+
+    }
+    /*********************************************************************************************************************************************/
+    /*********************************************************************************************************************************************/
+    function aumentar_contador() {
+        $.ajax({
+            url: '/Shipping/aumentar_contador_packing',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                 alertify.alert('Done!', 'The packing list number is <b>:   '+result+'</b>');
+
+            }
+        });
+    }
+    function reset_configuracion_pk() {
+        $.ajax({
+            url: '/Shipping/resetear_contadores_packing',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                 alertify.success('Succes!');
+                alertify.set('notifier', 'position', 'top-right');
+            }
+        });
+    }
+
+    /********************************************************************************************************************************************************************************************/
+    /********************************************************************************************************************************************************************************************/
+    //boton_cantidades_pedido
+    $(document).on("click", "#boton_cantidades_pedido", function () {
+        $("#caja_pedido_envio").html('');
+        $(".body_tabla_totales_envio").html('');
+        llenar_pedidos_envio();
+        contador_envio = 0;
+    });
+    var lista_estilos_envios, lista_tallas_envio, talla_envio,contador_envio;
+    var lista_tipos_envios = ['NONE', 'INITIAL', 'ECOM', 'RPLN', 'EXT', 'DMG', 'SAM'];
+    function llenar_pedidos_envio() {
+        $.ajax({
+            url: '/Trims/buscar_pedidos',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                var html = ''; //'<label class="">PO&nbsp;</label> <select class="form-control js-example-basic-single" id="caja_pedido" >';
+                html += '<option  value="0">Select</option>';
+                $.each(result, function (key, item) {
+                    html += '<option  value="' + item.id_pedido + '">' + item.pedido + '</option>';
+                });
+                //html += '</select>';
+                $("#caja_pedido_envio").html(html);
+                $('.js-example-basic-single').select2();
+            }
+        });
+    }
+    $(document).on("change", "#caja_pedido_envio", function () {
+        contador_envio = 0;
+         $.ajax({
+             url: '/Shipping/obtener_estilos_orden_envio',
+             data:"{'pedido':'"+$("#caja_pedido_envio").val()+"'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (jsonData) {
+                lista_estilos_envios = jsonData.Data.estilos;
+                lista_tallas_envio = jsonData.Data.tallas;
+                var lista_indices = jsonData.Data.lista_indices;
+                var anteriores = jsonData.Data.guardados;
+                var html = ''; talla_envio = '';
+                $.each(lista_tallas_envio, function (key, t) { talla_envio += '*' + t.id_talla; });
+                html += '<tr>';
+                html += '<th>STYLE</th>';
+                $.each(lista_tallas_envio, function (key, t) { html += '<th>' + t.talla + '</th>'; });
+                html += '<th>TYPE</th>';
+                html += '<th onclick="agregar_fila_cantidades()"><span class="glyphicon glyphicon-plus" aria-hidden="true"  style="padding 0px !important;"></span> </th>';
+                html += '<th style="visibility:hidden;"></th>';
+                html += '</tr>';
+                $("#cabecera_tabla_totales_envio").html(html);
+
+                $.each(lista_indices, function (key, ii) {
+                    $.each(anteriores, function (key, a) {
+                        if (a.indice == ii) {
+                            //contador_envio++;
+                            contador_envio = ii;
+                            html = '';
+                            html += '<tr>';
+                            html += '<td><select class="form-control  estilo_cantidades_envio " style="width:100%;  " >';
+                            $.each(lista_estilos_envios, function (key, e) {
+                                if (e.id_summary == a.id_summary) {
+                                    html += '<option selected value="' + e.id_summary + '">' + e.descripcion + '</option>';
+                                } else {
+                                    html += '<option value="' + e.id_summary + '">' + e.descripcion + '</option>';
+                                }
+                            });
+                            html += '</select></td>';
+                            $.each(lista_tallas_envio, function (key, t) {
+                                var existe = 0;
+                                $.each(a.lista_enviados, function (key, le) {
+                                    if (le.id_talla == t.id_talla) {
+                                        html += '<td><input maxlength="7" class="validacion inputs form-control  "  value="' + le.total + '"/></td>';
+                                        existe++;
+                                    }
+                                });
+                                if (existe == 0) {
+                                    html += '<td><input maxlength="7" class="validacion inputs form-control "  value="0"/></td>';
+                                }
+                            });
+                            html += '<td><select class="form-control tipo_cantidades_envio" style="width:100%;  " >';
+                            for (var i = 0; i < lista_tipos_envios.length; i++) {
+                                if (a.tipo == lista_tipos_envios[i]) {
+                                    html += '<option selected value="' + lista_tipos_envios[i] + '">' + lista_tipos_envios[i] + '</option>';
+                                } else {
+                                    html += '<option value="' + lista_tipos_envios[i] + '">' + lista_tipos_envios[i] + '</option>';
+                                }
+                            }
+                            html += '</select></td>';
+                            html += '<td><button type="button" title="Delete"  class="btn  DeleteRowEnvio" style="padding: 0em 0.3em !important; background:#3479bf; color:white; font-weight:bolder; " > <span class="glyphicon glyphicon-minus" aria-hidden="true"  style="padding 0px !important;"></span> </button></td>';
+                            html += '<td style="visibility:hidden;">'+ii+'</td>';
+                            html += '<td style="visibility:hidden;">1</td>';
+                            html += '</tr>';
+                            $(".body_tabla_totales_envio").append(html);
+                        }
+                    });
+                });
+                $('#div_tabla_totales_envio').css('visibility', 'visible');
+                //agregar_fila_cantidades();
+            }
+        });
+    });
+    function agregar_fila_cantidades() {
+        var html = '';
+        contador_envio++;
+        html += '<tr>';
+        html += '<td><select class="form-control  estilo_cantidades_envio " style="width:100%;  " >';
+        $.each(lista_estilos_envios, function (key, e) {
+            html += '<option value="' + e.id_summary + '">' + e.descripcion + '</option>';
+        });
+        html += '</select></td>';
+        $.each(lista_tallas_envio, function (key, t) {
+            html += '<td><input maxlength="7" class="validacion inputs form-control  "  value="0"/></td>';
+        });
+        html += '<td><select class="form-control tipo_cantidades_envio" style="width:100%;  " >';
+        for (var i = 0; i < lista_tipos_envios.length; i++) {
+            html += '<option value="' + lista_tipos_envios[i] + '">' + lista_tipos_envios[i] + '</option>';
+        }
+        html += '</select></td>';
+        html += '<td><button type="button" title="Delete"  class="btn  DeleteRowEnvio" style="padding: 0em 0.3em !important; background:#3479bf; color:white; font-weight:bolder; " > <span class="glyphicon glyphicon-minus" aria-hidden="true"  style="padding 0px !important;"></span> </button></td>';
+        html += '<td style="visibility:hidden;">'+contador_envio+'</td>';
+        html += '<td style="visibility:hidden;">0</td>';
+        html += '</tr>';
+        $(".body_tabla_totales_envio").append(html);
+        $('#div_tabla_totales_envio').css('visibility', 'visible');
+    }
+    $(document).on("click", ".DeleteRowEnvio", function () { $(this).closest("tr").remove(); });
+
+    function guardar_cantidades_envios(event) {
+        var estilo = '', talla = '', tipo = '', indice = '', cont = 0, viejos = '';;
+        var tallas_temporales = talla_envio.split('*');
+        $('#tabla_totales_envio tbody tr').each(function () {
+            estilo += '*' + $(this).find(".estilo_cantidades_envio").val();
+            tipo += '*' + $(this).find(".tipo_cantidades_envio").val();
+            var i ;
+            talla += '*';
+            for (i = 0; i < tallas_temporales.length;i++){
+                talla += '&' + $(this).find('td:eq(' + (i+1) + ') input').val();
+            }
+            indice += '*' + $(this).find('td:eq(' + (i+2) + ') ').html();
+            viejos += '*' + $(this).find('td:eq(' + (i+3) + ') ').html();
+        });
+        $.ajax({
+            url: '/Shipping/guardar_cantidades_envio',
+            data:"{'pedido':'"+$("#caja_pedido_envio").val()+"','id_talla':'"+talla_envio+"','estilo':'"+estilo+"','cant_talla':'"+talla+"','tipo':'"+tipo+"','indice':'"+indice+"','anterior':'"+viejos+"'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                $("#modal_cantidades_enviadas").modal('hide');
+            }
+        });
+    }
+
+
+    /********************************************************************************************************************************************************************************************/
+    /********************************************************************************************************************************************************************************************/
+
+
+</script>
+<a id="link_edicion_packings" href="@Url.Action("abrir_edicion_packing_list", "Shipping")" style="visibility:hidden;">Daily</a>
+<a id="link_excel" href="@Url.Action("excel_pk", "Shipping")" style="visibility:hidden;">Daily</a>
+<a id="reporte1" href="@Url.Action("excel_reporte_po_abierto", "Shipping")" style="visibility:hidden;">Daily</a>
+<a id="reporte_estados" href="@Url.Action("excel_reporte_status", "Shipping")" style="visibility:hidden;">Daily</a>
+<a id="reporte_pos_estilo" href="@Url.Action("excel_reporte_por_estilos", "Shipping")" style="visibility:hidden;">Daily</a>
+<a id="reporte_year" href="@Url.Action("listado_year", "Shipping")" style="visibility:hidden;">Daily</a>
+<a id="reporte_estado_orden" href="@Url.Action("excel_reporte_status_orden", "Shipping")" style="visibility:hidden;">Daily</a>
+<a id="reporte_historial_ordenes" href="@Url.Action("estados_pedidos", "Shipping")" style="visibility:hidden;">Daily</a>
+<a id="reporte_mde" href="@Url.Action("generar_reporte_mde", "Shipping")" style="visibility:hidden;">Daily</a>
+
+<a id="link_bol" href="@Url.Action("imprimir_bol", "Shipping")" style="visibility:hidden;">Daily</a>
+<style>
+    .boton_menu {
+        border: none;
+        color: white;
+        background: #69984c;
+        width: 100%;
+        text-align: left;
+        font-size: 1.2em;
+        padding: 0.5em
+    }
+
+        .boton_menu:hover {
+            border: none;
+            background: #f3f3f3;
+            color: #69984c;
+            width: 100%;
+            text-align: left;
+            font-size: 1.2em;
+        }
+
+    th {
+        text-align: center;
+    }
+
+    .breakhere {
+        page-break-after: always
+    }
+
+    p {
+        /*   border: 1px solid black !important;
+        margin: 0 !important;*/
+    }
+
+    input, select, textarea {
+        max-width: 100% !important;
+    }
+
+    .table-striped {
+        cursor: pointer;
+    }
+
+    .edit_driver {
+    }
+
+        .edit_driver:hover {
+            color: white !important;
+            background: #3479bf !important;
+            border-radius: 15px;
+        }
+
+    .estilos_tablas {
+        width: 6em;
+        background: none !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    .custom_check {
+        width: 1.3em !important;
+        height: 1.3em !important;
+    }
+
+    .ui-autocomplete {
+        z-index: 2147483647;
+    }
+
+    .dc_estilos {
+        -webkit-appearance: none;
+        border: none;
+        background: #337ab7;
+        box-shadow: none;
+        color: white;
+    }
+
+    .dropbtn {
+        background-color: #3479bf;
+        color: white;
+        padding: 16px;
+        font-size: 18px;
+        border: none;
+    }
+
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: white;
+        color: black;
+        min-width: 160px;
+        box-shadow: 1px 5px 25px 1px rgba(0,0,0,0.2);
+        z-index: 1;
+    }
+
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+    .menu {
+        background: #3479bf;
+        border-radius: 5px;
+        border: solid 1px #3479bf;
+        margin-bottom: .5em;
+        margin: 1em;
+    }
+
+    .dropdown-content a:hover {
+        /*background-color: #f1f1f1;
+        color: black;*/
+        background-color: #61b363;
+        color: white;
+    }
+
+    .dropdown:hover .dropdown-content {
+        display: block;
+    }
+
+    .modal-header-primary {
+        color: #fff;
+        padding: 9px 15px;
+        border-bottom: 1px solid #eee;
+        background-color: #3479bf;
+        -webkit-border-top-left-radius: 5px;
+        -webkit-border-top-right-radius: 5px;
+        -moz-border-radius-topleft: 5px;
+        -moz-border-radius-topright: 5px;
+        border-top-left-radius: 5px;
+        border-top-right-radius: 5px;
+    }
+
+    .x {
+        transition: transform .25s ease-in-out;
+        color: white !important;
+    }
+
+        .x:hover {
+            transform: rotate(180deg);
+            color: white !important;
+        }
+
+        .x:before {
+            transform: rotate(45deg);
+            transform-origin: center;
+        }
+
+        .x:after {
+            transform: rotate(-45deg);
+            transform-origin: center;
+        }
+
+    .load3 {
+        position: fixed;
+        z-index: 2001 !important;
+        height: 100%;
+        display: none;
+        border: 0;
+        padding: .5em 1em;
+        overflow: auto;
+        top: 0%;
+        left: 0%;
+        background: white;
+        width: 100%;
+        border: none;
+        opacity: 0.8;
+    }
+
+    .imagen_loading2 {
+        position: absolute;
+        z-index: 2000 !important;
+        top: 35%;
+        left: 43%;
+        width: 300px;
+        height: 300px;
+        background: url('../../Content/img/gif/loader3.gif');
+    }
+</style>
+</div>
+<div id="load_shipping" class="load3">
+    <div id="spinner" class="imagen_loading2" style=""></div>
+</div>
+<div id="espera" class="" style="display:none; z-index:999; position:absolute; top:0; left:0; width:100%; height:100%; background:white; opacity:0.6; ">
+    <div id="" class="" style="float:left; background-image:url('../../Content/img/gif/preloader.gif'); background-repeat: no-repeat; width:300px; height:160px; position:absolute; left:45%; top:25%; "></div>
+    <div id="" class="" style="float:left; font-size:2em; color:#3479bf; top:50%; position:absolute; left:36%; width:100%;">We are making the report, please wait a few seconds</div>
+</div>
+<div class="container-fluid" style="padding-left:7em; padding-right:3em;">
+    <center><h3>SHIPPING</h3></center>
+    <div class="row">
+        <div class="menu">
+            <!-------------------- <div class="dropdown">
+                <button class="dropbtn">DC</button>
+                <div class="dropdown-content">
+                    <a href="#modal_agregar_dc" data-toggle="modal" style="cursor:pointer;">Add DC</a>
+                </div>
+            </div>---------------------->
+
+            <div class="dropdown">
+                <button class="dropbtn" type="button" title="Open drivers list" id="boton_recibo_fantasy" href="#modal_drivers" data-toggle="modal">
+                    Drivers
+                </button>
+            </div>
+
+            <div class="dropdown">
+                <button class="dropbtn" type="button" title="Open addresses list" id="boton_recibo_fantasy" href="#modal_direcciones" data-toggle="modal">
+                    Addresses
+                </button>
+            </div>
+
+            <div class="dropdown">
+                <button class="dropbtn" type="button" title="Open containers list" id="boton_menu_contenedores" href="#modal_contenedores" data-toggle="modal">
+                    Containers
+                </button>
+            </div>
+
+            <div class="dropdown">
+                <button class="dropbtn">PK</button>
+                @if (ViewBag.departamento == 6 || ViewBag.departamento == 1)
+                {
+                    <div class="dropdown-content">
+                        <a href="@Url.Action("new_packing_list", "Shipping")" data-toggle="modal">New </a>
+                        <a href="@Url.Action("new_packing_list_samples", "Shipping")" data-toggle="modal">Samples</a>
+                        <a href="@Url.Action("new_packing_list_returns", "Shipping")" data-toggle="modal">Returns</a>
+                        <a href="@Url.Action("new_packing_list_directo_fantasy", "Shipping")" data-toggle="modal">Direct Fantasy</a>
+                        <a href="@Url.Action("new_packing_list_fantasy", "Shipping")" data-toggle="modal">Fantasy Breakdown</a>
+                        <a href="@Url.Action("new_packing_list_fantasy_extras", "Shipping")" data-toggle="modal">Fantasy Ext/Dmg</a>
+                        <a href="#modal_cantidades_enviadas" data-toggle="modal" id="boton_cantidades_pedido">Quantities</a>
+                    </div>
+                }
+            </div>
+
+            <div class="dropdown">
+                <button class="dropbtn" type="button" title="Open fantasy" id="boton_stock_fantasy" href="#modal_stock" data-toggle="modal">
+                    Fantasy
+                </button>
+            </div>
+            <div class="dropdown">
+                <button class="dropbtn abrir_reporte_mde" title="Generate MDE load sheet" type="button" id="boton_reportde" href="#modal_mde_reporte" data-toggle="modal">
+                    MDE Report
+                </button>
+            </div>
+            <div class="dropdown">
+                <button class="dropbtn">Reports</button>
+                <div class="dropdown-content">
+                    <a href="#modal_fechas_ordenes_abiertas" data-toggle="modal">Open orders list </a>
+                    <a href="#modal_orden_abierta" data-toggle="modal">See open order</a>
+                    @if (ViewBag.departamento == 6 || ViewBag.departamento == 1)
+                    {
+                        <a href="#modal_cerrar_pedido" data-toggle="modal">Close order </a>
+                    }
+                    <a href="#modal_estado_envio_estilos" data-toggle="modal">Order state</a>
+                    <a href="#modal_pos_mismo_estilo" data-toggle="modal">Orders with same styles</a>
+                    <a href="@Url.Action("listado_diario", "Shipping")">Packing daily list</a>
+                    <a href="#modal_packing_fecha" data-toggle="modal">Packing list by year</a>
+                    <a id="link" href="#">Orders list</a>
+                </div>
+            </div>
+
+            <div class="dropdown">
+                <button class="dropbtn">Extra</button>
+                <div class="dropdown-content">
+                    <a href="#modal_recibos" data-toggle="modal">Receives</a>
+                    <a href="#modal_staging" data-toggle="modal">Staging</a>
+                    <a href="#modal_shipping" data-toggle="modal">Shipping</a>
+                    @if (ViewBag.departamento == 6 || ViewBag.departamento == 1)
+                    {
+                        <a href="#" onclick="aumentar_contador()">+PK Counter</a>
+                        <a href="#" onclick="reset_configuracion_pk()">Reset PK Counter</a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--------------------------------------------------------------------------------------------------------------------------->
+    <div id="div_graficas" class="row" style="margin-left:0px !important;  width: 100%; margin:0px; ">
+        <div class=" " style=" width: 100%; margin-top:1em;  ">
+            <b style="left:0em; float:left; padding-top:2.5em; padding-left: 2em;">Search </b>
+            <input type="text" class="search_po form-control validacion" onkeyup="busqueda_pk()" placeholder="Type to search" id="caja_buscar_pk" style="width: 15em; float:left; margin-top:0px; margin-left:1em; margin-bottom:1em; margin-top: 2.5em; ">
+        </div>
+        <br />
+        <div class="row" style="width: 100%;  margin:0px; border:3px solid #337ab7; border-radius:3px;">
+            <table id="" class="table table-striped table-hover" style="margin:0px;">
+                <thead style="background:#3479bf; color:white;">
+                    <tr>
+                        <th style="width:5%; text-align:left;">#</th>
+                        <th style="width:40%; text-align:left;">PACKING</th>
+                        <th style="width:10%;text-align:left;">DATE</th>
+                        <th style="width:20%;text-align:left;">CUSTOMER</th>
+                        <th style="width:5%;">PK</th>
+                        <th style="width:5%;">BOL</th>
+                        <th style="width:5%;">ID'S</th>
+                        <th style="width:5%;">EDIT</th>
+                        <th style="width:5%;">DELETE</th>
+                    </tr>
+                </thead>
+            </table>
+            <div style="height:550px; overflow:auto;">
+                <table id="tabla_pks" class="table table-striped table-hover" style="margin:0px;">
+                    <tbody class="body_tabla_pk"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+<!---------------------------MODALES----------------------------------------------------------------------------------------->
+<input type="hidden" id="caja_id_driver">
+<input type="hidden" id="caja_id_direccion">
+<input type="hidden" id="caja_id_pk">
+
+
+<div class="modal fade" id="modal_cantidades_enviadas" data-target="#modal_cantidades_enviadas">
+    <div class="modal-dialog modal-lg" style="width:80% !important; height:80% !important; overflow:auto;">
+        <div class="modal-content" style="width:100% !important; height:100% !important; overflow:auto;  ">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" title="Close" class="close x " data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong></strong>Shipping</h4>
+            </div>
+            <div class="modal-body " id="contenedor_modal_direccion">
+
+                <div class="row" id="" style="padding: 0em 2em; ">
+                    <div class="form-group col-sm-2 ">
+                        <label class=" col-form-label">Order</label>
+                        <select class="form-control js-example-basic-single  " style="width:100%;  " id="caja_pedido_envio"></select>
+                    </div>
+                </div>
+
+                <div id="div_tabla_totales_envio" class=" " style="padding: 0em 2em;  visibility:visible;   width: 100%;   height:250px; ">
+                    <table id="tabla_totales_envio" class="table table-striped " style="margin:0px;">
+                        <thead class="cabecera_tabla" id="cabecera_tabla_totales_envio" style="background:#3479bf; color:white;">
+                        </thead>
+                        <tbody class="body_tabla_totales_envio"></tbody>
+                    </table>
+                    <button type="button" title="Save changes" style="margin-top: 0.1em; " class="btn btn-sm btn-success" onclick="guardar_cantidades_envios(event)" data-toggle="modal">Save</button>
+                    <br />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="modal_pks_change" data-target="#modal_pks_change">
+    <div class="modal-dialog modal-lg" style="width:80% !important; height:80% !important; overflow:auto;">
+        <div class="modal-content" style="width:100% !important; height:100% !important; overflow:auto;  ">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" title="Close " class="close x " data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong></strong>PK</h4>
+            </div>
+            <div class="modal-body " id="">
+
+                <div class="form-group  " id="" style="margin-top:3em;margin-bottom:0px;">
+                    <label class="" style="float:left; font-size: 1.25em;">Select the PK </label>
+                </div>
+                <div id="" class="row" style=" margin:0px;padding:0px;">
+                    <table id="tabla_pk_assignment" class="fold-table table table-striped table-hover " style="margin:0px;padding:0px;">
+                        <thead class="cabecera_tabla_pk_assignment" style="background:#3479bf; color:white; ">
+                            <tr>
+                                <th>#</th>
+                                <th>Packing</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody class="rows_tabla_pk_assignment"></tbody>
+                    </table>
+                    <button type="button" title="Generate report" class="btn btn-success mb-2" id="" onclick="guardar_asignacion_pk(event);" style="float:right; margin:1em; margin-right:5em;">From table</button>
+                </div>
+                <div class="form-group  " id="" style="margin-top:3em;margin-bottom:0px;">
+                    <div class="form-group col-sm-3 " style="padding-right: 0px;">
+                        <label id="pk_siguiente" class="" style="float:left; font-size: 1.25em;"></label><br />
+                    </div>
+                    <div class="form-group col-sm-1 " id="">
+                        <button type="button" title="Generate report" class="btn btn-danger mb-2" id="" onclick="asignar_nuevo_pk(event);" style="  ">Use this</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="modal_mde_reporte" data-target="#modal_mde_reporte">
+    <div class="modal-dialog modal-lg" style="width:80% !important; height:80% !important; overflow:auto;">
+        <div class="modal-content" style="width:100% !important; height:100% !important; overflow:auto;  ">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" title="Close " class="close x " data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong></strong>MDE</h4>
+            </div>
+            <div class="modal-body " id="contenedor_modal_agregar_ids">
+
+                <div class="form-group  " id="div_id_number" style="margin-top:3em;margin-bottom:0px;">
+                    <label class="" style="float:left; font-size: 1.25em;">Select the packings </label>
+                </div>
+                <div id="" class="row" style=" margin:0px;padding:0px;">
+                    <table id="" class="fold-table table table-striped table-hover " style="margin:0px;padding:0px;">
+                        <thead class="cabecera_tabla_packing_mde" style="background:#3479bf; color:white; ">
+                            <tr>
+                                <th style="width:5%;">#</th>
+                                <th style="width:21%;">Packing</th>
+                                <th style="width:20%;">Order</th>
+                                <th style="width:30%;">Customer</th>
+                                <th style="width:19%;">Date</th>
+                                <th style="visibility:hidden; border: none; width:5%;">CBX</th>
+                            </tr>
+                        </thead>
+                    </table>
+                    <div style="overflow:auto; height:500px; margin:0px;padding:0px; ">
+                        <table id="tabla_packing_mde" class="fold-table table table-striped table-hover " style="margin:0px;padding:0px;">
+                            <tbody class="rows_tabla_packing_mde"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <button type="button" title="Generate report" class="btn btn-primary mb-2" id="boton_guardar_mde" onclick="guardar_packings_mde(event);" style="float:right; margin:1em; margin-right:5em;">Generate</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modal_ids" data-target="#modal_ids">
+    <div class="modal-dialog modal-lg" style="width:90% !important; height:90% !important; overflow:auto;">
+        <div class="modal-content" style="width:100% !important; height:100% !important; overflow:auto;  ">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" title="Close" class="close x " data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong></strong>Add ID's</h4>
+            </div>
+            <div class="modal-body " id="contenedor_modal_agregar_ids">
+
+
+                <div id="ppk_bk_id" class="row" style=" display:none;margin:0px;padding:0px;">
+                    <table id="tabla_estilos_ids" class="fold-table table table-striped table-hover ">
+                        <thead class="cabecera_tabla_estilos_ids" style="background:#3479bf; color:white;">
+                            <tr>
+                                <th style="visibility:hidden; border: none; width:1px;">I</th>
+                                <th style="visibility:hidden; border: none; width:1px;">ISI</th>
+                                <th>Style</th>
+                                <th>Quantity</th>
+                                <th>DC</th>
+                                <th>ID</th>
+                                <th style="visibility:hidden; border: none; width:1px;">PK</th>
+                                <th style="visibility:hidden; border: none; width:1px;">INX</th>
+                                <th style="visibility:hidden; border: none; width:1px;">TE</th>
+                                <th style="visibility:hidden; border: none; width:1px;">TP</th>
+                            </tr>
+                        </thead>
+                        <tbody class="rows_tabla_estilos_ids"></tbody>
+                    </table>
+                </div>
+                <button type="button" title="Save Ids" class="btn btn-primary mb-2" id="boton_guardar_bp" onclick="guardar_ids(event);" style="float:right; margin:1em;">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="modal_ids2" data-target="#modal_ids2">
+    <div class="modal-dialog modal-lg" style="width:90% !important; height:90% !important; overflow:auto;">
+        <div class="modal-content" style="width:100% !important; height:100% !important; overflow:auto;  ">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" title="Close" class="close x " data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong></strong>Add ID's</h4>
+            </div>
+            <div class="modal-body " id="contenedor_modal_agregar_ids2">
+
+                <div class="form-group  " id="div_id_number2" style="margin-top:3em;margin-bottom:0px; margin-left:5em;">
+                    <label class="" style="float:left; padding-top:.5em;">ID&nbsp; </label>
+                    <input type="text" class=" form-control numeric" placeholder="Type ID" maxlength="10" style="width:25%;" id="caja_numero_id">&nbsp;
+                </div>
+                <div id="ppk_bk_id2" class="row" style=" display:none;margin:0px;padding:0px;">
+                    <table id="tabla_estilos_ids2" class="fold-table table table-striped table-hover ">
+                        <thead class="cabecera_tabla_estilos_ids2" style="background:#3479bf; color:white;">
+                            <tr>
+                                <th style="visibility:hidden; border: none; width:1px;">I</th>
+                                <th style="visibility:hidden; border: none; width:1px;">ISI</th>
+                                <th>Style</th>
+                                <th>Quantity</th>
+                                <th>DC</th>
+                                <th style="visibility:hidden; border: none; width:1px;">CBX</th>
+                                <th style="visibility:hidden; border: none; width:1px;">PK</th>
+                                <th style="visibility:hidden; border: none; width:1px;">INX</th>
+                                <th style="visibility:hidden; border: none; width:1px;">TE</th>
+                                <th style="visibility:hidden; border: none; width:1px;">TP</th>
+                            </tr>
+                        </thead>
+                        <tbody class="rows_tabla_estilos_ids2"></tbody>
+                    </table>
+                </div>
+                <button type="button" title="Save Ids" class="btn btn-primary mb-2" id="boton_guardar_bp2" onclick="guardar_ids2(event);" style="float:right; margin:1em;">Save</button>
+
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modal_edicion" data-target="#modal_edicion">
+    <div class="modal-dialog modal-lg" style="width:80% !important; height:80% !important; overflow:auto;">
+        <div class="modal-content" style="width:100% !important; height:50% !important; overflow:auto;  ">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" title="Close" class="close x " data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong></strong>Edit information</h4>
+            </div>
+            <div class="modal-body " id="contenedor_modal_agregar_ids">
+
+                <div class="row">
+                    <div class="form-group ">
+                        <div class="form-group col-sm-4 ">
+                            <label for="caja_by_trans" class=" col-form-label">PK </label>
+                            <input type="text" readonly class="form-control numeric " maxlength="10" id="caja_pk_edit">
+                        </div>
+                        <div class="form-group col-sm-4 " id="div_driver_edit"></div>
+                        <div class="form-group col-sm-4 " id="div_address_edit"></div>
+
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="form-group ">
+
+                        <div class="form-group col-sm-4 " id="div_container_edit"></div>
+
+                        <div class="form-group col-sm-4 ">
+                            <label for="caja_by_trans" class=" col-form-label pk_edit">Seal </label>
+                            <input type="text" class="form-control numeric pk_edit" maxlength="10" id="caja_seal_pk_edit">
+                        </div>
+                        <div class="form-group col-sm-4 ">
+                            <label for="caja_by_trans" class=" col-form-label pk_edit ">Replacement</label>
+                            <input type="text" class="form-control validacion pk_edit" maxlength="50" id="caja_replacement_pk_edit">
+                        </div>
+
+                    </div>
+                </div>
+
+
+                <div class="row">
+                    <div class="form-group ">
+                        <div class="form-group col-sm-4 ">
+                            <label for="caja_by_trans" class=" col-form-label pk_edit "></label>
+                            <button type="button" title="" class="btn btn-primary mb-2" id="boton_guardar_bp" onclick="guardar_edicion(event);" style="float:left; margin:1em;">Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modal_drivers" data-target="#modal_drivers">
+    <div class="modal-dialog modal-lg" style="width:80% !important; height:80% !important; overflow:auto; padding:0px;">
+        <div class="modal-content" style="width:100% !important; height:100% !important; overflow:auto;  ">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" title="Close" class="close x " data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong></strong>Drivers</h4>
+            </div>
+            <div class="modal-body " id="contenedor_modal_drivers">
+                <button type="button" title="Add new driver" id="boton_formulario_nuevo_conductor" style="margin-top: 0.1em; margin: .5em 2em;" class="btn  btn-danger ">New driver</button>
+
+                <div class="row" id="formulario_nuevo_conductor" style="padding: 0em 2em; display:none;">
+                    <div class="form-group col-sm-2 " id="carrier_div">
+                    </div>
+                    <div class="form-group col-sm-2 ">
+                        <label class=" col-form-label">Name</label>
+                        <input type="text" class=" form-control validacion check_driver" maxlength="150" id="caja_nombre_driver">
+                    </div>
+                    <div class="form-group col-sm-2  ">
+                        <label class=" col-form-label">Plates</label>
+                        <input type="text" class=" form-control validacion check_driver" maxlength="10" id="caja_plates">
+                    </div>
+                    <div class="form-group col-sm-2  ">
+                        <label class=" col-form-label">Scac</label>
+                        <input type="text" class=" form-control validacion check_driver" maxlength="10" id="caja_scac">
+                    </div>
+                    <div class="form-group col-sm-2  ">
+                        <label class=" col-form-label">Caat</label>
+                        <input type="text" class=" form-control numeric check_driver" maxlength="10" id="caja_caat">
+                    </div>
+                    <div class="form-group col-sm-2 ">
+                        <label class=" col-form-label">Tractor</label>
+                        <input type="text" class=" form-control validacion check_driver" id="caja_tractor">
+                    </div>
+                    <div class="form-group col-sm-2  ">
+                        <br />
+                        <button type="button" title="Save driver" style="margin-top: 0.1em; " class="btn btn-sm btn-success" onclick="guardar_driver(event)" data-toggle="modal">Save driver</button>
+                    </div>
+                </div>
+
+                <div id="div_tabla_drivers" class=" " style="padding: 0em 2em;  visibility:visible;   width: 100%;   height:250px; ">
+                    <table id="" class="table table-striped results_e" style="margin:0px;">
+                        <thead class="cabecera_tabla" style="background:#3479bf; color:white; ">
+                            <tr>
+                                <th style="width:3%;">#</th>
+                                <th style="width:24%;">CARRIER</th>
+                                <th style="width:25%;">NAME</th>
+                                <th style="width:10%;">PLATES</th>
+                                <th style="width:10%;">SCAC</th>
+                                <th style="width:10%;">CAAT</th>
+                                <th style="width:10%;">TRACTOR</th>
+                                <th style="width:4%;"></th>
+                                <th style="width:4%;"></th>
+                            </tr>
+                        </thead>
+                    </table>
+                    <div style="overflow:auto; height:250px; border: 1px solid #337ab7; border-radius: 5px; margin:0px;">
+                        <table id="tabla_drivers" class="table table-striped results_e" style="margin:0px;">
+                            <tbody class="body_tabla_drivers"></tbody>
+                        </table>
+                    </div>
+                    <br />
+                </div>
+
+                <div id="editar_driver" class="row" style="padding:0em 2em; margin-top:2em; display:none;">
+
+                    <div style="margin-bottom:3px;">
+                        <h4 style="margin-left:2em; margin-bottom:1em; ">
+                            Edit driver
+                            <button type="button" title="Cancel edition" id="boton_ocultar_edicion_conductor" style="margin-top: 0.1em; margin: .5em 2em;" class="btn btn-sm btn-danger ">Cancel</button>
+                        </h4>
+                    </div>
+                    <div class="form-group ">
+                        <div class="form-group col-sm-2 " id="carrier_div_edit">
+
+                        </div>
+                        <div class="form-group col-sm-2 ">
+                            <label class=" col-form-label">Name</label>
+                            <input type="text" class=" form-control validacion check_driver_edit" maxlength="150" id="caja_nombre_driver_edit">
+                        </div>
+                        <div class="form-group col-sm-2  ">
+                            <label class=" col-form-label">Plates</label>
+                            <input type="text" class=" form-control validacion check_driver_edit" maxlength="10" id="caja_plates_edit">
+                        </div>
+                    </div>
+                    <div class="form-group ">
+                        <div class="form-group col-sm-2  ">
+                            <label class=" col-form-label">Scac</label>
+                            <input type="text" class=" form-control validacion check_driver_edit" maxlength="10" id="caja_scac_edit">
+                        </div>
+                        <div class="form-group col-sm-2  ">
+                            <label class=" col-form-label">Caat</label>
+                            <input type="text" class=" form-control numeric check_driver_edit" maxlength="10" id="caja_caat_edit">
+                        </div>
+                        <div class="form-group col-sm-2 ">
+                            <label class=" col-form-label">Tractor</label>
+                            <input type="text" class=" form-control validacion check_driver_edit" id="caja_tractor_edit">
+                        </div><br />
+                    </div>
+                    <div class="form-group col-sm-2  ">
+                        <br />
+                        <button type="button" title="Save edition" style="margin-top: 0.1em; " class="btn btn-sm btn-success " onclick="guardar_driver_edit(event)" data-toggle="modal">Save changes</button>
+                    </div>
+                </div>
+
+
+
+
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modal_direcciones" data-target="#modal_direcciones">
+    <div class="modal-dialog modal-lg" style="width:80% !important; height:80% !important; overflow:auto;">
+        <div class="modal-content" style="width:100% !important; height:100% !important; overflow:auto;  ">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" title="Close" title="Close" class="close x " data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong></strong>Addresses</h4>
+            </div>
+            <div class="modal-body " id="contenedor_modal_direccion">
+                <button type="button" title="Add new address" id="boton_formulario_nueva_direccion" style="margin-top: 0.1em; margin: .5em 2em;" class="btn  btn-danger ">New address</button>
+
+                <div class="row" id="formulario_nueva_direccion" style="padding: 0em 2em; display:none;">
+                    <div class="form-group col-sm-2 ">
+                        <label class=" col-form-label">Name</label>
+                        <input type="text" class=" form-control validacion check_dir" maxlength="50" id="caja_nombre_dir">
+                    </div>
+                    <div class="form-group col-sm-2  ">
+                        <label class=" col-form-label">Street</label>
+                        <input type="text" class=" form-control validacion check_dir" maxlength="80" id="caja_direccion_dir">
+                    </div>
+                    <div class="form-group col-sm-2  ">
+                        <label class=" col-form-label">City & State</label>
+                        <input type="text" class=" form-control validacion check_dir" maxlength="80" id="caja_ciudad_dir">
+                    </div>
+                    <div class="form-group col-sm-2  ">
+                        <label class=" col-form-label">Zip Code</label>
+                        <input type="text" class=" form-control validacion check_dir" maxlength="7" id="caja_codigo_postal_dir">
+                    </div>
+                    <div class="form-group col-sm-2  ">
+                        <br />
+                        <button type="button" title="Save new address" style="margin-top: 0.1em; " class="btn btn-sm btn-success" onclick="guardar_direccion(event)" data-toggle="modal">Save address</button>
+                    </div>
+                </div>
+
+                <div id="div_tabla_direcciones" class=" " style="padding: 0em 2em;  visibility:visible;   width: 100%;   height:250px; ">
+                    <table id="" class="table table-striped results_e" style="margin:0px;">
+                        <thead class="cabecera_tabla" style="background:#3479bf; color:white;">
+                            <tr>
+                                <th style="width:5%;">#</th>
+                                <th style="width:20%;">NAME</th>
+                                <th style="width:25%;">STREET</th>
+                                <th style="width:20%;">CITY/STATE</th>
+                                <th style="width:20%;">ZIP CODE</th>
+                                <th style="width:5%;"></th>
+                                <th style="width:5%;"></th>
+                            </tr>
+                        </thead>
+                    </table>
+                    <div style="overflow:auto; height:250px; border: 1px solid #337ab7; border-radius: 5px;">
+                        <table id="tabla_direcciones" class="table table-striped results_e" style="margin:0px;">
+                            <tbody class="body_tabla_direcciones"></tbody>
+                        </table>
+                    </div>
+                    <br />
+                </div>
+
+                <div id="editar_direccion" class="row" style="padding:0em 2em; margin-top:2em; display:none;">
+
+                    <h4 style="margin-left:2em; margin-bottom:1em;">Edit address <button type="button" title="Cancel edition" id="boton_cerrar_edicion_direccion" style="margin-top: 0.1em; margin: .5em 2em;" class="btn btn-sm btn-danger ">x</button></h4>
+                    <div class="form-group col-sm-2 ">
+                        <label class=" col-form-label">Name</label>
+                        <input type="text" class=" form-control validacion check_dir_edit" maxlength="50" id="caja_nombre_dir_edit">
+                    </div>
+                    <div class="form-group col-sm-2  ">
+                        <label class=" col-form-label">Street</label>
+                        <input type="text" class=" form-control validacion check_dir_edit" maxlength="80" id="caja_direccion_dir_edit">
+                    </div>
+                    <div class="form-group col-sm-2  ">
+                        <label class=" col-form-label">City & State</label>
+                        <input type="text" class=" form-control validacion check_dir_edit" maxlength="80" id="caja_ciudad_dir_edit">
+                    </div>
+                    <div class="form-group col-sm-2  ">
+                        <label class=" col-form-label">Zip Code</label>
+                        <input type="text" class=" form-control validacion check_dir_edit" maxlength="7" id="caja_codigo_postal_dir_edit">
+                    </div>
+                    <div class="form-group col-sm-2  ">
+                        <br />
+                        <button type="button" title="Save changes" style="margin-top: 0.1em; " class="btn btn-sm btn-success" onclick="guardar_direccion_edicion(event)" data-toggle="modal">Save</button>
+                    </div>
+                </div>
+
+
+
+
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modal_stock" data-target="#modal_stock">
+    <div class="modal-dialog modal-lg" style="width:80% !important; height:80% !important; overflow:auto;">
+        <div class="modal-content" style="width:100% !important; height:100% !important; overflow:auto;  ">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" title="Close" class="close x " data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong></strong>Stock</h4>
+            </div>
+            <h4 class="modal-title" style="padding-top:2em; padding-left:2em;">Enter the number of boxes per size</h4>
+            <div class="modal-body " id="">
+                <br /><br />
+                <div id="div_tabla_stock_fantasy" class=" " style="padding: 0em 2em 0em 2em;  visibility:visible;   width: 100%;   height:500px; overflow:auto;">
+                    <table id="tabla_stock_fantasy" class="table table-striped results_e" style="visibility:visible;">
+                        <thead class="cabecera_tabla_stock_fantasy" style="background:#3479bf; color:white;">
+                            <tr><th>Style</th><th>PO</th><th>SM</th><th>MD</th><th>LG</th><th>XL</th><th>2X</th><th><button type="button" style=" " class="btn btn btn-danger" onclick="agregar_stock()" data-toggle="modal">+</button></th></tr>
+                        </thead>
+                        <tbody class="body_tabla_stock_fantasy"></tbody>
+                    </table>
+                    <button type="button" title="Save" style="margin-left:2em; " class="btn btn btn-warning" onclick="guardar_stock(event)" data-toggle="modal">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal_fechas_ordenes_abiertas" data-target="#modal_fechas_ordenes_abiertas">
+    <div class="modal-dialog modal-lg" style=" ">
+        <div class="modal-content" style="  ">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" title="Close" class="close x " data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong></strong>Open orders report</h4>
+            </div>
+            <h4 class="modal-title" style="padding-top:2em; padding-left:2em;"><b>Select dates</b></h4>
+            <div class="modal-body " id="">
+                <div id="" class=" " style=" ">
+                    <div class="row" id="" style="padding:1em; ">
+                        <div class="form-group col-sm-6 ">
+                            <label for="caja_ship_date" class=" col-form-label ">From this date</label>
+                            <input type="text" class="form-control order " onkeydown="upperCaseF(this)" maxlength="23" id="caja_rep1_inicio">
+                        </div>
+                        <div class="form-group col-sm-6 ">
+                            <label for="caja_ship_date" class=" col-form-label ">To this date</label>
+                            <input type="text" class="form-control order " onkeydown="upperCaseF(this)" maxlength="23" id="caja_rep1_final">
+                        </div>
+                    </div>
+                    <button type="button" title="Generate report" style="margin-left:2em; " class="btn btn btn-warning" onclick="enviar_fechas_reporte(event)" data-toggle="modal">Generate</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modal_cerrar_pedido" data-target="#modal_cerrar_pedido">
+    <div class="modal-dialog modal-lg" style=" ">
+        <div class="modal-content" style="  ">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" title="Close" class="close x " data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong></strong>Close an order</h4>
+            </div>
+            <h4 class="modal-title" style="padding-top:2em; padding-left:2em;"><b>Type the order to close</b></h4>
+            <div class="modal-body " id="">
+                <div id="" class=" " style=" ">
+                    <div class="row" id="" style="padding:1em; ">
+                        <div class="form-group col-sm-5 ">
+                            <label for="caja_ship_date" class=" col-form-label ">Order</label>
+                            <input type="text" class="form-control ordersc " onkeydown="upperCaseF(this)" maxlength="23" id="caja_order_close">
+                        </div>
+                    </div>
+                    <button type="button" title="Close order" style="margin-left:2em; " class="btn btn btn-warning" onclick="close_order(event)" data-toggle="modal">Close order</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modal_estado_envio_estilos" data-target="#modal_estado_envio_estilos">
+    <div class="modal-dialog modal-lg" style=" ">
+        <div class="modal-content" style="  ">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" title="Close" class="close x " data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong></strong>Order status</h4>
+            </div>
+            <h4 class="modal-title" style="padding-top:2em; padding-left:2em;"><b>Type the order</b></h4>
+            <div class="modal-body " id="">
+                <div id="" class=" " style=" ">
+                    <div class="row" id="" style="padding:1em; ">
+                        <div class="form-group col-sm-5 ">
+                            <label for="caja_ship_date" class=" col-form-label ">Order</label>
+                            <input type="text" class="form-control po " onkeydown="upperCaseF(this)" maxlength="23" id="caja_order_status">
+                        </div>
+                    </div>
+                    <button type="button" title="Get status" style="margin-left:2em; " class="btn btn btn-warning" onclick="estado_estilos_orden(event)" data-toggle="modal">Get status</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modal_pos_mismo_estilo" data-target="#modal_pos_mismo_estilo">
+    <div class="modal-dialog modal-lg" style=" ">
+        <div class="modal-content" style="  ">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" title="Close" class="close x " data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong></strong>Orders by style</h4>
+            </div>
+            <h4 class="modal-title" style="padding-top:2em; padding-left:2em;"><b>Type the style</b></h4>
+            <div class="modal-body " id="">
+                <div id="" class=" " style=" ">
+                    <div class="row" id="" style="padding:1em; ">
+                        <div class="form-group col-sm-5 ">
+                            <label for="caja_ship_date" class=" col-form-label ">Style</label>
+                            <input type="text" class="form-control styles " onkeydown="upperCaseF(this)" maxlength="23" id="caja_style_po">
+                        </div>
+                    </div>
+                    <button type="button" title="Search" style="margin-left:2em; " class="btn btn btn-warning" onclick="ordenes_por_estilo(event)" data-toggle="modal">Search</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal_packing_fecha" data-target="#modal_packing_fecha">
+    <div class="modal-dialog modal-lg" style=" ">
+        <div class="modal-content" style="  ">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" title="Close" class="close x " data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong></strong>Orders list by year</h4>
+            </div>
+            <div class="modal-body " id="">
+                <div id="" class=" " style=" ">
+                    <div class="row" id="" style="padding:1em; ">
+                        <div class="form-group col-sm-5 " id="div_fecha_pk">
+
+                        </div>
+                    </div>
+                    <button type="button" title="Search" style="margin-left:2em; " class="btn btn btn-warning" onclick="packing_list(event)" data-toggle="modal">Search</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal_orden_abierta" data-target="#modal_orden_abierta">
+    <div class="modal-dialog modal-lg" style=" ">
+        <div class="modal-content" style="  ">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" title="Close" class="close x " data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong></strong>Missing pieces from order</h4>
+            </div>
+            <h4 class="modal-title" style="padding-top:2em; padding-left:2em;"><b>Type the order</b></h4>
+            <div class="modal-body " id="">
+                <div id="" class=" " style=" ">
+                    <div class="row" id="" style="padding:1em; ">
+                        <div class="form-group col-sm-5 ">
+                            <label for="caja_ship_date" class=" col-form-label ">Order</label>
+                            <input type="text" class="form-control ordersc " onkeydown="upperCaseF(this)" maxlength="23" id="caja_orden_faltantes">
+                        </div>
+                    </div>
+                    <button type="button" title="Generate report" style="margin-left:2em; " class="btn btn btn-warning" onclick="ver_estado_orden(event)" data-toggle="modal">Report</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal_contenedores" data-target="#modal_contenedores">
+    <div class="modal-dialog modal-lg" style="width:80% !important; height:80% !important; overflow:auto;">
+        <div class="modal-content" style="width:100% !important; height:100% !important; overflow:auto;  ">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" title="Close" class="close x " data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong></strong>Containers</h4>
+            </div>
+            <div class="modal-body " id="contenedor_modal_direccion">
+                <button type="button" title="Add new container" id="boton_formulario_nuevo_contenedor" style="margin-top: 0.1em; margin: .5em 2em;" class="btn  btn-danger ">New container</button>
+
+                <div class="row" id="formulario_nuevo_contenedor" style="padding: 0em 2em; display:none;">
+                    <div class="form-group col-sm-2 ">
+                        <label class=" col-form-label">Eco</label>
+                        <input type="text" class=" form-control validacion check_con" maxlength="20" id="caja_eco_con">
+                    </div>
+                    <div class="form-group col-sm-2  ">
+                        <label class=" col-form-label">Plates</label>
+                        <input type="text" class=" form-control validacion check_con" maxlength="20" id="caja_plates_con">
+                    </div>
+
+                    <div class="form-group col-sm-2  ">
+                        <br />
+                        <button type="button" title="Save new container" style="margin-top: 0.1em; " class="btn btn-sm btn-success" onclick="guardar_contenedor(event)" data-toggle="modal">Save</button>
+                    </div>
+                </div>
+
+                <div id="div_tabla_contenedores" class=" " style="padding: 0em 2em;  visibility:visible;   width: 100%;   height:250px; ">
+                    <table id="" class="table table-striped results_e" style="margin:0px;">
+                        <thead class="cabecera_tabla" style="background:#3479bf; color:white;">
+                            <tr>
+                                <th style="width:5%;">#</th>
+                                <th style="width:45%;">ECO</th>
+                                <th style="width:40%;">PLATES</th>
+                                <th style="width:5%;"></th>
+                                <th style="width:5%;"></th>
+                            </tr>
+                        </thead>
+                    </table>
+                    <div style="overflow:auto; height:250px; border: 1px solid #337ab7; border-radius: 5px;">
+                        <table id="tabla_contenedores" class="table table-striped results_e" style="margin:0px;">
+                            <tbody class="body_tabla_contenedores"></tbody>
+                        </table>
+                    </div>
+                    <br />
+                </div>
+
+                <div id="editar_contenedor" class="row" style="padding:0em 2em; margin-top:2em; display:none;">
+
+                    <h4 style="margin-left:2em; margin-bottom:1em;">Edit container <button type="button" title="Cancel edition" id="boton_cerrar_edicion_contenedor" style="margin-top: 0.1em; margin: .5em 2em;" class="btn btn-sm btn-danger ">x</button></h4>
+                    <div class="form-group col-sm-2 ">
+                        <label class=" col-form-label">#</label>
+                        <input type="text" readonly class=" form-control validacion check_con_edit" maxlength="50" id="caja_id_contenedor_edit">
+                    </div>
+                    <div class="form-group col-sm-2 ">
+                        <label class=" col-form-label">Eco</label>
+                        <input type="text" class=" form-control validacion check_con_edit" maxlength="20" id="caja_eco_con_edit">
+                    </div>
+                    <div class="form-group col-sm-2  ">
+                        <label class=" col-form-label">Plates</label>
+                        <input type="text" class=" form-control validacion check_con_edit" maxlength="20" id="caja_plates_con_edit">
+                    </div>
+
+                    <div class="form-group col-sm-2  ">
+                        <br />
+                        <button type="button" title="Save changes" style="margin-top: 0.1em; " class="btn btn-sm btn-success" onclick="guardar_contenedor_edicion(event)" data-toggle="modal">Save</button>
+                    </div>
+                </div>
+
+
+
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal_recibos" data-target="#modal_recibos">
+    <div class="modal-dialog modal-lg" style="width:90% !important; height:90% !important; overflow:auto;">
+        <div class="modal-content" style="width:100% !important; height:100% !important; overflow:auto;  ">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" title="Close" class="close x " data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong>RECEIVE</strong></h4>
+            </div>
+            <div class="modal-body " id="">
+
+                <iframe src="/Almacen/departamentos_recibos" style="width:100%; height: 55em; border: none;"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal_staging" data-target="#modal_staging">
+    <div class="modal-dialog modal-lg" style="width:90% !important; height:90% !important; overflow:auto;">
+        <div class="modal-content" style="width:100% !important; height:100% !important; overflow:auto;  ">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" title="Close" class="close x " data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong>STAGING</strong></h4>
+            </div>
+            <div class="modal-body " id="">
+
+                <iframe src="/Staging/departamentos_stagging" style="width:100%; height: 55em; border: none;"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modal_shipping" data-target="#modal_shipping">
+    <div class="modal-dialog modal-lg" style="width:90% !important; height:90% !important; overflow:auto;">
+        <div class="modal-content" style="width:100% !important; height:100% !important; overflow:auto;  ">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" title="Close" class="close x " data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong>SHIPPING</strong></h4>
+            </div>
+            <div class="modal-body " id="">
+
+                <iframe src="/Shipping/departamentos_shipping" style="width:100%; height: 55em; border: none;"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+

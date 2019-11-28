@@ -1,0 +1,617 @@
+﻿@{
+    ViewBag.Title = "TRIMS";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+</div>
+<link href="~/Content/base_m.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+<link href="~/Content/base_m.css" rel="stylesheet" />
+<script>
+    $(document).on("input", ".numeric", function () {
+        this.value = this.value.replace(/\D/g, '');
+    });
+    $(document).on("input", ".validacion", function () {
+        /*var c = this.selectionStart,
+            r = /[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ .()!@@/#%-]/,
+            v = $(this).val();
+        if (r.test(v)) {
+            $(this).val(v.replace(r, ''));
+            c--;
+        }
+        this.setSelectionRange(c, c);*/
+    });
+    $(document).on("click", "a", function () { $("#loading").css('display', 'none'); });
+    $(document).ready(function () {        
+        buscar_pedidos();
+        $('.js-example-basic-single').select2();
+    });
+     $(document).on("input", ".lugares", function () { $('.lugares').autocomplete({ source: '@Url.Action("Autocomplete_ubicacion")' }); });
+     function buscar_pedidos() {
+        $("#load").css('display', 'inline');
+        $.ajax({
+            url: '/Trims/buscar_pedidos',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                var html = '';
+                html += '<option  value="0">SELECT</option>';
+                $.each(result, function (key, i) {
+                    html += '<option  value="' + i.id_pedido + '">' + i.pedido + '</option>';
+                });
+                $('#caja_pedido').html(html);
+                $("#load").css('display', 'none');
+            }
+        });
+    }    
+    /*****************************************************************************************************************************************************************/
+    var estilos, tallas, request,trims_orden,locaciones;
+    var array_trims_tallas = ['PRICE TICKETS'];   
+    var array_trims_completos = ['CARTON LABEL', 'HANGTAG', 'STICKERS', 'UPC STICKERS', 'HANGTAGS'];
+    var array_trims_tallas_sin_estilo = ['SIZERS','SIZE STRIP'];
+    var total_estilos_tallas = 0, total_estilos_completos = 0, total_pedido_completos = 0, total_tallas = 0;
+    var texto_tallas = '',tallas_ids,trims_tallas_ids;
+    $(document).on("change", "#caja_pedido", function () {
+        $("#load").css('display', 'inline');
+        $.ajax({
+            url: '/Trims/obtener_estilos_orden',
+            data: "{'pedido':'" + $('#caja_pedido').val() + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (jsonData) {
+                estilos = jsonData.Data.estilos;
+                tallas = jsonData.Data.tallas;
+                request = jsonData.Data.trims_request;
+                trims_orden = jsonData.Data.trims_orden;
+                locaciones = jsonData.Data.locaciones;
+                $('.cabecera_tabla_estilos').html('');
+                $('.rows_tabla_locaciones').html('');
+
+                texto_tallas = ''; total_tallas = 0; tallas_ids = '';
+                $.each(tallas, function (key, t) {
+                    total_tallas++;
+                    texto_tallas += '<th><center>' + t.talla + '</center></th>';
+                    tallas_ids += '*'+t.id_talla;
+                });                
+                cabeceras_estilo();                
+                tallas_sin_estilo();                
+                tabla_trims_todo();
+                $("#load").css('display', 'none');
+                $("#div_tabla_locaciones").css('display', 'inline');                
+                $("#div_boton_guardar").css('display', 'inline');                
+                agregar_locaciones_anteriores();
+            }
+        });
+    });
+    function tallas_sin_estilo() {
+        var html = '<tr>';
+        //var array_trims_tallas_sin_estilo_num=[];
+       /* for (var i = 0; i < array_trims_tallas_sin_estilo.length; i++) { array_trims_tallas_sin_estilo_num.push(0); }
+        for (var i = 0; i < array_trims_tallas_sin_estilo.length; i++) {
+            $.each(request, function (key, r) {
+                if (array_trims_tallas_sin_estilo[i] == r.tipo_item) {
+                    array_trims_tallas_sin_estilo_num[i]++;
+                } 
+            });
+        }
+        for (var i = 0; i < array_trims_tallas_sin_estilo.length; i++) {
+            if (array_trims_tallas_sin_estilo_num[i]!=0) {
+                html += '<th colspan="' + total_tallas + '"><center>' + array_trims_tallas_sin_estilo[i] + '</center></th>';      
+            }
+        }*/
+        $.each(request, function (key, r) {
+            if (array_trims_tallas_sin_estilo.includes(r.tipo_item)) {               
+                html += '<th><center>' + r.item+ '</center></th>';       
+            }
+        });      
+        html += '</tr>';
+        /*html += '<tr>';
+        for (var i = 0; i < array_trims_tallas_sin_estilo.length; i++) {
+            if (array_trims_tallas_sin_estilo_num[i]!=0) {
+               html += texto_tallas;   
+            }
+        }          
+        html += '</tr>';*/
+        //$("#div_tabla_tallas_sin_estilos").css('display', 'inline');
+        $('.cabecera_tabla_tallas_sin_estilos').html(html);
+        html = '<tr>';
+        /*$.each(array_trims_tallas_sin_estilo, function (key, attse) {
+            $.each(tallas, function (key, t) {
+                $.each(request, function (key, r) {
+                    if ( attse==r.tipo_item && (r.item).includes(t.talla) ) {
+                        var x = 0, id_trim_orden = 0;
+                        $.each(trims_orden, function (key, to) {
+                            if (to.id_item == r.id_item && to.id_summary == 0 && to.id_talla == t.id_talla) {
+                                x = to.total;
+                                id_trim_orden = to.id_trim_order;
+                            }
+                        });
+                        if (x != 0) {
+                            html += '<td><input maxlength="10" class="numeric form-control " value="' + x + '" id="' + id_trim_orden + '_' + r.id_item + '_0_' + t.id_talla + '" /></td>';//total
+                        } else {
+                            html += '<td><input maxlength="10" class="numeric form-control " id="0_' + r.id_item + '_0_' + t.id_talla + '"  /></td>';//total
+                        }
+                    }
+                });
+            });
+        });    */
+        $.each(request, function (key, r) {
+            if (array_trims_tallas_sin_estilo.includes(r.tipo_item)) {
+                var x = 0, id_trim_orden = 0;
+                $.each(trims_orden, function (key, to) {
+                    if (to.id_item == r.id_item && to.id_summary ==0 && to.id_talla == 0) {
+                        x = to.total;
+                        id_trim_orden = to.id_trim_order;
+                    }
+                });
+                if (x != 0) {
+                    html += '<td><input maxlength="10" class="numeric form-control " value="' + x + '"  id="' + id_trim_orden + '_' + r.id_item + '_0_0" /></td>';//total
+                } else {
+                    html += '<td><input maxlength="10" class="numeric form-control "  id="0_' + r.id_item + '_0_0" /></td>';//total
+                }
+            }
+        });     
+        html += '</tr>';
+        $('.rows_tabla_tallas_sin_estilos').html(html);
+    }
+    function cabeceras_estilo() {
+        var html = '<tr><th></th>';
+        $.each(request, function (key, r) {
+            if (array_trims_tallas.includes(r.tipo_item)) {
+               html += '<th colspan="' + total_tallas + '"><center>' + r.item + '</center></th>';                       
+            } 
+        });
+        $.each(request, function (key, r) {
+            if (array_trims_completos.includes(r.tipo_item)) {
+                html += '<th><center>' + r.item + '</center></th>';                       
+            } 
+        });
+        html += '</tr><tr><th></th>';
+        $.each(request, function (key, r) {
+            if (array_trims_tallas.includes(r.tipo_item)) {
+                html += texto_tallas;
+            } 
+        });
+        $.each(request, function (key, r) {
+            if (array_trims_completos.includes(r.tipo_item)) {
+                html += '<th></th>';                
+            } 
+        });        
+        //$("#div_tabla_estilos").css('display', 'inline');
+        $('.cabecera_tabla_estilos').html(html);
+        html = '';
+        $.each(estilos, function (key, e) {
+            html += '<tr>';           
+            html += '<td>' + e.descripcion + '</td>';
+            $.each(request, function (key, r) {
+                if (array_trims_tallas.includes(r.tipo_item)) {
+                    $.each(tallas, function (key, t) {
+                        var x = 0,id_trim_orden=0;
+                        $.each(trims_orden, function (key, to) {
+                            if (to.id_item == r.id_item && to.id_summary == e.id_summary && to.id_talla==t.id_talla ) {
+                                x = to.total;
+                                id_trim_orden = to.id_trim_order;
+                            }
+                        });
+                        if (x != 0) {
+                            html += '<td><input maxlength="10" class="numeric form-control " value="'+x+'" id="'+id_trim_orden+'_'+r.id_item+'_'+e.id_summary+'_'+t.id_talla+'" /></td>';//total
+                        } else {
+                            html += '<td><input maxlength="10" class="numeric form-control " id="0_'+r.id_item+'_'+e.id_summary+'_'+t.id_talla+'"  /></td>';//total
+                        }
+                        
+                   }); 
+                } 
+            });
+            $.each(request, function (key, r) {
+                if (array_trims_completos.includes(r.tipo_item)) {
+                    var x = 0,id_trim_orden=0;
+                    $.each(trims_orden, function (key, to) {
+                        if (to.id_item == r.id_item && to.id_summary == e.id_summary && to.id_talla==0) {
+                            x = to.total;
+                            id_trim_orden = to.id_trim_order;
+                        }
+                    });
+                    if (x != 0) {
+                        html += '<td><input maxlength="10" class="numeric form-control " value="' + x + '"  id="'+id_trim_orden+'_'+r.id_item+'_'+e.id_summary+'_0" /></td>';//total
+                    } else {
+                        html += '<td><input maxlength="10" class="numeric form-control "  id="0_'+r.id_item+'_'+e.id_summary+'_0" /></td>';//total
+                    }      
+                } 
+            });                 
+            html += '</tr>';
+        });
+        $('.rows_tabla_estilos').html(html);
+    }
+    function tabla_trims_todo() {
+        var html = '';
+        $.each(request, function (key, r) {
+            if (!array_trims_completos.includes(r.tipo_item) && !array_trims_tallas.includes(r.tipo_item) && !array_trims_tallas_sin_estilo.includes(r.tipo_item) ) {
+                html += '<tr>';                
+                html += '<td>' + r.item + '</td>';  
+                var x = 0,id_trim_orden=0;
+                $.each(trims_orden, function (key, to) {
+                    if (to.id_item == r.id_item && to.id_summary ==0  && to.id_talla == 0) {
+                        x = to.total;
+                        id_trim_orden = to.id_trim_order;
+                    }
+                });
+                if (x != 0) {
+                    html += '<td><input maxlength="10" class="numeric form-control " value="' + x + '" id="'+id_trim_orden+'_'+r.id_item+'_0_0" /></td>';//total
+                } else {
+                    html += '<td><input maxlength="10" class="numeric form-control "  id="0_'+r.id_item+'_0_0" /></td>';//total
+                }                         
+                html += '</tr>';                
+            } 
+        });
+        //$("#div_tabla_totales").css('display', 'inline');
+        $('.rows_tabla_totales').html(html)
+    }
+    function agregar_locaciones_anteriores() {
+        $.each(locaciones, function (key, l) {
+            var html = '<tr>';  
+            html += '<td><input maxlength="10" class="validation form-control lugares" value="'+l.ubicacion+'"  /></td>';//total 
+            html += '<td><input maxlength="200" class="validation form-control " value="'+l.comentarios+'"  /></td>';//total 
+            html += '<td><span class="glyphicon glyphicon-minus delLoc" aria-hidden="true"></span></td>';
+            html += '</tr>';    
+            $('.rows_tabla_locaciones').append(html);
+        });        
+    }   
+    function agregar_row_locacion() {
+        var html = '<tr>';  
+        html += '<td><input maxlength="10" class="validation form-control lugares"  /></td>';//total 
+        html += '<td><input maxlength="200" class="validation form-control "  /></td>';//total 
+        html += '<td><span class="glyphicon glyphicon-minus delLoc" aria-hidden="true"></span></td>';
+        html += '</tr>';    
+        $('.rows_tabla_locaciones').append(html);
+    }   
+    $(document).on("click", ".delLoc", function () { $(this).closest("tr").remove(); });
+    function guardar() {
+        $("#load").css('display', 'inline');
+        var ids = '', total = '', locacion = '', datos = '', comentarios_locaciones = '';     
+        $('#tabla_estilos tbody tr').each(function () {
+            $(this).find("td input").each(function () {
+                if ($(this).val() != 0) {
+                    datos += '*' + $(this).val() + '_' + $(this).attr('id');
+                }
+            });
+        });
+        $('#tabla_tallas_sin_estilos tbody tr').each(function () {
+            $(this).find("td input").each(function () {
+                if ($(this).val() != 0) {
+                    datos += '*' + $(this).val() + '_' + $(this).attr('id');
+                }
+            });
+        });
+        $('#tabla_totales tbody tr').each(function () {
+            $(this).find("td input").each(function () {
+                if ($(this).val() != 0) {
+                    datos += '*' + $(this).val() + '_' + $(this).attr('id');                  
+                }
+            });
+        });
+        $('#tabla_locaciones tbody tr').each(function () {
+            locacion += '*'+$(this).find('td:eq(0) input').val();
+            comentarios_locaciones += '*'+$(this).find('td:eq(1) input').val();           
+        });        
+        $.ajax({
+            url: '/Trims/guardar_auditoria',
+            data: "{'pedido':'" + $('#caja_pedido').val() + "','dato':'" + datos + "','locacion':'" + locacion + "','comentario_locacion':'" + comentarios_locaciones + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                $("#load").css('display', 'none');
+                alertify.success('Succes!');
+                alertify.set('notifier', 'position', 'top-right');
+                window.location.reload();
+               
+            }
+        });
+
+
+    }
+</script>
+<style>
+    table, th {
+        white-space:nowrap;
+    }
+    table, td {
+        min-width:6em;       
+    }
+    .form-control,td{
+        padding:0px 3px;     
+    }
+    /****************************************************************************************************************************************/
+    textarea {
+        border: 1px solid #ccc;
+        border-radius: 7px;
+    }
+    #imagenes_edicion {
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 0.5em 0.5em 0.5em 1.5em;
+    }
+    .center {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    /****************************************************************************************************************************************/
+    input[type=checkbox] {
+        /* Double-sized Checkboxes */
+        -ms-transform: scale(2); /* IE */
+        -moz-transform: scale(2); /* FF */
+        -webkit-transform: scale(2); /* Safari and Chrome */
+        -o-transform: scale(2); /* Opera */
+        padding: 10px;
+    }
+
+    /* Might want to wrap a span around your checkbox text */
+    .checkboxtext {
+        /* Checkbox text */
+        font-size: 110%;
+        display: inline;
+    }
+
+    input[type='radio']:after {
+        width: 15px;
+        height: 15px;
+        border-radius: 15px;
+        top: -2px;
+        left: -1px;
+        position: relative;
+        background-color: #a7afb5;
+        content: '';
+        display: inline-block;
+        visibility: visible;
+        border: 0px solid white;
+    }
+
+    input[type='radio']:checked:after {
+        width: 15px;
+        height: 15px;
+        border-radius: 15px;
+        top: -2px;
+        left: -1px;
+        position: relative;
+        background-color: #ecaf2d;
+        content: '';
+        display: inline-block;
+        visibility: visible;
+        border: 0px solid white;
+    }
+
+    .cabecera_tabla2 {
+        /*background:#3479bf; #46a772*/
+        background: white;
+        color: #3479bf;
+        pointer-events: none;
+        cursor: not-allowed;
+    }
+
+    .cabecera_tabla {
+        /*background:#3479bf; #46a772*/
+        background: #3479bf;
+        color: white;
+        pointer-events: none;
+        cursor: not-allowed;
+    }
+
+    .select2-container--default .select2-selection--single {
+        display: block !important;
+        /*width: 100% !important;*/
+        height: 34px !important;
+        padding: 6px 12px !important;
+        font-size: 14px !important;
+        line-height: 1.42857143 !important;
+        color: #555 !important;
+        background-color: #fff !important;
+        background-image: none !important;
+        border: 1px solid #ccc !important;
+        border-radius: 4px !important;
+        -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075) !important;
+        box-shadow: inset 0 1px 1px rgba(0,0,0,.075) !important;
+        -webkit-transition: border-color ease-in-out .15s,-webkit-box-shadow ease-in-out .15s !important;
+        -o-transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s !important;
+        transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s !important;
+    }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #444;
+            line-height: 20px;
+        }
+
+    .modal-dialog {
+        width: 75% !important;
+        padding: 2em;
+        height: 90% !important;
+        min-height: 90% !important;
+    }
+
+    .modal-content {
+        height: 90% !important;
+    }
+
+    .modal-lg {
+        max-width: 80% !important;
+    }
+
+    a {
+        text-decoration: none !important;
+    }
+
+    .boton_barra_menu, .btn-info {
+        color: #fff;
+        background-color: #3479bf !important;
+        border-color: #3479bf !important;
+    }
+
+    .modal {
+        /*z-index: 4 !important;*/
+    }
+
+    .dataTables_filter {
+    }
+
+    .dropbtn {
+        background-color: #3479bf;
+        color: white;
+        padding: 16px;
+        /*padding: 0.40em;*/
+        font-size: 18px;
+        border: none;
+    }
+
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: white;
+        color: black;
+        min-width: 160px;
+        box-shadow: 1px 5px 25px 1px rgba(0,0,0,0.2);
+        z-index: 1;
+    }
+
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+    .menu {
+        background: #3479bf;
+        border-radius: 5px;
+        border: solid 1px #3479bf;
+        margin-bottom: .5em;
+        margin: 1em;
+    }
+
+    .dropdown-content a:hover {
+        /*background-color: #f1f1f1;
+        color: black;*/
+        background-color: #61b363;
+        color: white;
+    }
+
+    .dropdown:hover .dropdown-content {
+        display: block;
+    }
+
+
+    .modal-header-primary {
+        color: #fff;
+        padding: 9px 15px;
+        border-bottom: 1px solid #eee;
+        background-color: #3479bf;
+        -webkit-border-top-left-radius: 5px;
+        -webkit-border-top-right-radius: 5px;
+        -moz-border-radius-topleft: 5px;
+        -moz-border-radius-topright: 5px;
+        border-top-left-radius: 5px;
+        border-top-right-radius: 5px;
+    }
+
+    .x {
+        transition: transform .25s ease-in-out;
+        color: white !important;
+    }
+
+        .x:hover {
+            transform: rotate(180deg);
+            color: white !important;
+        }
+
+        .x:before {
+            transform: rotate(45deg);
+            transform-origin: center;
+        }
+
+        .x:after {
+            transform: rotate(-45deg);
+            transform-origin: center;
+        }
+
+    tr {
+        cursor: pointer;
+    }
+</style>
+<div id="load" class="load">
+    <div id="spinner" class="imagen_loading" style=""></div>
+</div>
+<a id="link_index" href="@Url.Action("index", "Trims")" style="visibility:hidden;">Daily</a>
+<input type="hidden" id="id_trim_edicion">
+<input type="hidden" id="id_trim_card_edicion">
+<div class="container-fluid" style="padding-left:7em; padding-right:3em;">
+    <h3 style="color:#3479bf; font-weight:bold;">AUDIT</h3>
+
+    <div class="row">
+        <div class="form-group">
+            <div class="form-group col-md-2 ">
+                <label for="caja_pedido_entrega">Order </label>
+                <select class="form-control js-example-basic-single " style="width:100%;" id="caja_pedido"></select>
+            </div>
+        </div>
+    </div>
+
+    <div id="div_tabla_estilos" class="row" style=" overflow:auto;">
+        <table id="tabla_estilos" class="fold-table table table-striped table-hover " style="">
+            <thead class="cabecera_tabla_estilos"></thead>
+            <tbody class="rows_tabla_estilos"></tbody>
+        </table>
+    </div>
+
+    <div id="div_tabla_tallas_sin_estilos" class="row" style="overflow:auto;">
+        <table id="tabla_tallas_sin_estilos" class="fold-table table table-striped table-hover " style="">
+            <thead class="cabecera_tabla_tallas_sin_estilos"></thead>
+            <tbody class="rows_tabla_tallas_sin_estilos"></tbody>
+        </table>
+    </div>
+
+    <div class="row">
+        <div id="div_tabla_totales" class=" col-md-3 " style=" ">
+            <table id="tabla_totales" class="fold-table table table-striped table-hover " style="">
+                <thead class="cabecera_tabla_totales"><!--<tr><th>TRIM</th><th>TOTAL</th><th></th><th></th></tr>--></thead>
+                <tbody class="rows_tabla_totales"></tbody>
+            </table>
+        </div>
+
+
+        <div id="div_tabla_locaciones" class=" col-md-4 " style="display:none;">
+            <table id="tabla_locaciones" class="fold-table table table-striped table-hover " style="">
+                <thead class="cabecera_tabla_locaciones">
+                    <tr>
+                        <th>Location</th>
+                        <th>Comments</th>
+                        <th><span class="glyphicon glyphicon-plus" aria-hidden="true" onclick="agregar_row_locacion()"></span></th>
+                    </tr>
+                </thead>
+                <tbody class="rows_tabla_locaciones"></tbody>
+            </table>
+        </div>
+
+        <div id="div_boton_guardar" class=" col-md-2 " style="display:none;">
+
+            <button type="button" class="btn btn-success mb-2" onclick="guardar()" style=" margin-top:1.5em;  margin-right:2em;">Save</button>
+        </div>
+
+    </div>
+
+
+
+
+
+
+
+
+
+
+</div>
+

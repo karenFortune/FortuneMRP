@@ -1,0 +1,795 @@
+﻿@model FortuneSystem.Models.Pedidos.OrdenesCompra
+
+@{
+    ViewBag.Title = "Style PO";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link type="text/css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsgrid/1.5.3/jsgrid.min.css" />
+<link type="text/css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsgrid/1.5.3/jsgrid-theme.min.css" />
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jsgrid/1.5.3/jsgrid.min.js"></script>
+
+<!-- DevExtreme themes -->
+<link rel="stylesheet" type="text/css" href="~/Content/dx.common.css" />
+<link rel="stylesheet" type="text/css" href="~/Content/dx.light.css" />
+
+
+<!-- DevExtreme library -->
+<script type="text/javascript" src="~/Scripts/jszip.min.js"></script>
+<script type="text/javascript" src="~/Scripts/dx.all.js"></script>
+
+<script src="~/Scripts/general/obtenerListado.js"></script>
+<script src="~/Scripts/general/date.format.js"></script>
+<script src="~/Scripts/general/calculosPrintShop.js"></script>
+<link type="text/css" href="~/Content/cssGeneral/estiloRadioButtonPrintS.css" rel="stylesheet" />
+<script src="~/Scripts/general/TablasDepartamentos.js"></script>
+<style>
+    tr.highlighted td {
+        background: #b3e0ff;
+    }
+
+    input[type=number] {
+        width: 50%;
+        text-align: center;
+    }
+
+    input.numeric {
+        width: 50%;
+        text-align: center;
+    }
+
+    input.number {
+        width: 50%;
+        text-align: center;
+    }
+    /*th, td {
+        border: 1px solid blue;
+        width: 100px;
+        word-wrap: break-word;
+    }
+    */
+    #guardarBatch {
+        margin-left: 600px;
+        margin-top: 1px;
+        width: 100px;
+        height: 40px;
+        border: none;
+        font-size: 20px;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    #registrarNuevo {
+        margin-left: 50px;
+        margin-top: 1px;
+        width: 170px;
+        height: 40px;
+        border: none;
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    #modificarBatch {
+        margin-left: 600px;
+        margin-top: 1px;
+        width: 120px;
+        height: 40px;
+        border: none;
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+    #detailsPack {
+        margin-left: 10px;
+        margin-top: 1px;
+        width: 210px;
+        height: 40px;
+        border: none;
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+    #detailsQCReport {
+        margin-left: 10px;
+        margin-top: 1px;
+        width: 180px;
+        height: 40px;
+        border: none;
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+
+    input.txtDes {
+        background-color: transparent;
+        border: 0px;
+        outline: none;
+        -webkit-box-shadow: none;
+        -moz-box-shadow: none;
+        box-shadow: none;
+        width: 50%;
+        text-align: center;
+    }
+
+
+
+    .center {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        width: 60%;
+        height: 25%;
+    }
+
+    .tImagen {
+        text-align: center;
+        font-size: 20px;
+    }
+
+    img {
+        cursor: zoom-in;
+    }
+
+    #flecha {
+        cursor: auto;
+    }
+
+    #pie {
+        height: 500px;
+    }
+
+    .letrero {
+        font-family: impact, sans-serif;
+        font-size: 2em;
+        text-align: center;
+        letter-spacing: 3.8pt;
+        word-spacing: -12.6pt;
+        color: #2f77b5;
+    }
+
+    .edit_driver {
+    }
+
+        .edit_driver:hover {
+            color: white !important;
+            background: #3479bf !important;
+            border-radius: 15px;
+        }
+</style>
+@{
+    if (TempData["eliminarBatch"] != null)
+    {
+        <script type="text/javascript">
+            alertify.set('notifier', 'position', 'top-right');
+            alertify.notify(@Html.Raw(Json.Encode(TempData["eliminarBatch"])), 'success', 5, null);
+
+        </script>
+    }
+}
+<script>
+    $(function () {
+        $('#imagenArte').on('click', function () {
+            $('.enlargeImageModalSource').attr('src', $(this).attr('src'));
+            $('#enlargeImageModal').modal('show');
+        });
+        $('#imagenPNL').on('click', function () {
+            $('.enlargeImageModalSource').attr('src', $(this).attr('src'));
+            $('#enlargeImageModal').modal('show');
+        });
+    });
+
+    /**/</script>
+
+</div>
+<div class="modal fade" id="enlargeImageModal" tabindex="-1" role="dialog" aria-labelledby="enlargeImageModal" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="exampleModalLabel">ART</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+            </div>
+            <div class="modal-body">
+                <img class="enlargeImageModalSource center" style="width: 80%;">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal PACKING-->
+<div class="modal fade" id="ModalPacking" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="exampleModalCenterTitle">PACKING QUANTITY</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="titulo_Tipo_Empaque" style="display:none; text-align:center"></div>
+                <div style="width: 100%; height:400px; overflow:auto;" id="tablaPackingcont">
+                    <table id="tablePacking" class="table table-sm table-striped table-hover">
+                        <thead class="encabezado"></thead>
+                        <tbody class="tbodyP"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal PNL-->
+<div class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="exampleModalCenterTitle">PNL QUANTITY</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table id="tableGeneral" class="table table-sm table-striped table-hover ">
+                    <thead class="encabezado"></thead>
+                    <tbody class="tbodysPNL"></tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal QC REPORT-->
+<div class="modal fade" id="ModalQcReport" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <script src="~/Scripts/general/obtenerListadoQC.js"></script>
+                <div class="row" id="panelReport">
+                    <div class="col-sm-13">
+                        <div class="panel" id="datosReporte">
+                            <div class="panel-heading">
+                                <h4>QC REPORT</h4>
+                                @Html.HiddenFor(model => model.QCReport.IdQCReport)
+                            </div>
+                            <div id="menuTabs" style="padding-left:1em;">
+                                <ul class="nav nav-tabs">
+                                    <li class="active"><a data-toggle="tab" href="#turn1">PrintShop Report</a></li>
+                                </ul>
+                                <div class="tab-content">
+                                    <div id="turn1" class="tab-pane fade in active" style="padding-left:1em;">
+                                        <h3>REPORT</h3>
+                                        <div class="container-fluid">
+                                            <div class="form-row">
+                                                <div class="form-group col-md-4">
+                                                    @Html.LabelFor(model => model.QCReport.TurnosQC, htmlAttributes: new { @class = "control-label " })
+                                                    @Html.EnumDropDownListFor(model => model.QCReport.TurnosQC, "Select Shift", new { @class = "form-control" })
+                                                    @Html.ValidationMessageFor(model => model.QCReport.TurnosQC, "", new { @class = "text-danger" })
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="contenedorReporte" style="display:none;">
+                                            <div class="container-fluid">
+                                                <div class="form-row">
+                                                    <div class="form-group col-md-4">
+                                                        @Html.LabelFor(model => model.QCReport.Fecha, htmlAttributes: new { @class = "control-label" })
+                                                        @Html.EditorFor(model => model.QCReport.Fecha, new { htmlAttributes = new { @class = "form-control date-picker nuevo_rep", @readonly = "readonly" } })
+                                                        @Html.ValidationMessageFor(model => model.QCReport.Fecha, "", new { @class = "text-danger" })
+                                                    </div>
+                                                    <div class="form-group col-md-4">
+                                                        @Html.LabelFor(model => model.QCReport.Maquinas, htmlAttributes: new { @class = "control-label " })
+                                                        @Html.EnumDropDownListFor(model => model.QCReport.Maquinas, "Select Machine", new { @class = "form-control", @disabled = "disabled" })
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                            <div class="container-fluid">
+                                                <div class="form-row">
+                                                    <div class="form-group ">
+                                                        @Html.LabelFor(model => model.QCReport.ReporteG, htmlAttributes: new { @class = "control-label " }) <br />
+                                                        @Html.TextAreaFor(model => model.QCReport.ReporteG, 10, 20, new { @class = "form-control nuevo_rep", style = "max-width:100% !important;", @readonly = "readonly" })
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="container-fluid">
+                                                <h2>Personal</h2>
+                                                <div class="form-group col-sm-6 estilo">
+                                                    <div class="form-group col-md-8">
+                                                        @Html.LabelFor(model => model.QCReport.Sacador, htmlAttributes: new { @class = "control-label" })
+                                                        @Html.EditorFor(model => model.QCReport.Sacador, new { htmlAttributes = new { @class = "form-control nuevo_rep", @style = "text-transform:uppercase", @readonly = "readonly" } })
+                                                    </div>
+                                                    <div class="form-group col-md-8">
+                                                        @Html.LabelFor(model => model.QCReport.Cachador, htmlAttributes: new { @class = "control-label" })
+                                                        @Html.EditorFor(model => model.QCReport.Cachador, new { htmlAttributes = new { @class = "form-control nuevo_rep", @style = "text-transform:uppercase", @readonly = "readonly" } })
+                                                    </div>
+                                                    <div class="form-group col-md-8">
+                                                        @Html.LabelFor(model => model.QCReport.Metedor, htmlAttributes: new { @class = "control-label" })
+                                                        @Html.EditorFor(model => model.QCReport.Metedor, new { htmlAttributes = new { @class = "form-control nuevo_rep", @style = "text-transform:uppercase", @readonly = "readonly" } })
+                                                    </div>
+                                                    <div class="form-group col-md-8">
+                                                        @Html.LabelFor(model => model.QCReport.QCInspector, htmlAttributes: new { @class = "control-label" })
+                                                        @Html.EditorFor(model => model.QCReport.QCInspector, new { htmlAttributes = new { @class = "form-control  nuevo_rep", @style = "text-transform:uppercase", @readonly = "readonly" } })
+                                                    </div>
+                                                </div>
+                                                <div class="form-group col-sm-5 estilo">
+                                                    <div class="form-group col-md-8">
+                                                        @Html.LabelFor(model => model.QCReport.AQL, htmlAttributes: new { @class = "control-label" })<br />
+                                                        @Html.DropDownListFor(model => model.QCReport.AQL,
+                                                            new List<SelectListItem> {
+                                                                 new SelectListItem { Value = "true" , Text = "Approved" },
+                                                                 new SelectListItem { Value = "false" , Text = "Not Approved" }
+                                                              },
+                                                            new { @class = "form-control  nuevo_rep myselect", @disabled = "disabled" })
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="container-fluid">
+                                                <h2>WASH TEST</h2>
+                                                <div class="table-responsive">
+                                                    <table class="table table-striped table-bordered" id="tablaPruebaLavado">
+                                                        <thead>
+                                                            <tr>
+                                                                <th style="text-align:center">HOUR</th>
+                                                                <th style="text-align:center">SIZE</th>
+                                                                <th style="text-align:center">RESULT</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody class="tbodyPruebaLavado"></tbody>
+                                                    </table>
+                                                    <table class="table table-striped table-bordered" id="tablaPruebaLavadoModif">
+                                                        <thead>
+                                                            <tr>
+                                                                <th style="text-align:center">#</th>
+                                                                <th style="text-align:center">HOUR</th>
+                                                                <th style="text-align:center">SIZE</th>
+                                                                <th style="text-align:center">RESULT</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody class="tbodyPruebaLavadoModif"></tbody>
+                                                    </table>
+                                                </div>
+
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <br />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container-fluid" style="padding-left:5em; padding-right:4em;">
+    <div class="letrero">PRINTSHOP</div>
+    <div class="panel panel-primary" id="consultaPO">
+        <div class="panel-heading">
+            <h2>Reference Order: <label style="font-size: x-large; font-weight: 500; color:white;" id="PO"> @Html.DisplayFor(model => model.PO, new { @class = "control-label col-md-6" })</label>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;      Purchase Order: <label style="font-size: x-large; font-weight: 500; color:white;" id="VPO">@Html.DisplayFor(model => model.VPO, new { @class = "control-label col-md-6" })</label></h2>
+        </div>
+        @Html.HiddenFor(model => model.IdPedido)
+        @Html.HiddenFor(model => model.CatClienteFinal.NombreCliente)
+        @Html.HiddenFor(model => model.NumeroPedido)
+    </div>
+
+    <div class="container-fluid">
+        <div class="form-row">
+            <div class="form-group col-sm-4 estilo">
+                <label style="font-size: x-large; font-weight: 500">
+                    @Html.LabelFor(model => model.CatCliente.Nombre, new { @class = "control-label" }):
+                    <label style="font-size: x-large; font-weight: 500" id="cliente">@Html.DisplayFor(model => model.CatCliente.Nombre, new { @class = "control-label col-md-6" })</label>
+                </label>
+            </div>
+            <div class="form-group col-sm-7 estilo">
+                <label style="font-size: x-large; font-weight: 500">
+                    @Html.LabelFor(model => model.CatClienteFinal.NombreCliente, new { @class = "control-label" }):
+                    <label style="font-size: x-large; font-weight: 300" id="clienteF">@Html.DisplayFor(model => model.CatClienteFinal.NombreCliente, new { @class = "control-label col-md-6" })</label>
+                </label>
+            </div>
+        </div>
+    </div>
+    <div class="panel panel-primary" id="consultaPO">
+        <div class="panel-heading">
+            @Html.HiddenFor(model => model.InfoSummary.IdItems)
+            <input type="text" class="form-control pull-right" style="width:20%" id="searchPO" placeholder="Type to search PO...">
+            <div class="form-group">
+                <h4>STYLES</h4>
+            </div>
+        </div>
+        <div id="div_tabla_estilos" style="width: 100%; height:250px; overflow:auto; ">
+            <br />
+            <div class="form-group">
+                <input type="text" class="form-control pull-right" style="width:20%" id="search" placeholder="Type to search Style...">
+            </div>
+            <table id="tabless" class="table table-sm table-striped table-hover ">
+                <thead class="encabezadoPrint"></thead>
+                <tbody class="tbody"></tbody>
+            </table>
+        </div>
+    </div>
+    <br />
+    <div class="row" style="display:none;" id="panelPrintShop">
+        <div class="col-sm-11">
+            <div class="panel panel-primary" id="consultaTalla" style="visibility:hidden; height: 1580px;">
+                <div class="panel-heading">
+                    <h4>PRINTSHOP</h4>
+                    @Html.HiddenFor(model => model.IdSummaryOrden)
+                </div>
+                <div id="div_tabla_tallas" style="width: 100%; height:490px; overflow:auto;  ">
+
+                    <div id="div_datos_staging" style=" overflow:auto; visibility:hidden; background-color:lightblue; text-align:center; font:bold; "></div>
+                    <div id="div_estilo" style=" overflow:auto; visibility:hidden; background-color:lightblue; text-align:center "></div>
+                    <br />
+                    <div id="BotonesDepartamentos" style="display:inline; text-align:center">
+                        <button type="button" class="btn btn-primary btn-md pull-left " id="detailsPack" onclick="TablaPacking();"><span class="glyphicon glyphicon-pushpin" aria-hidden="true"></span> Details Packing</button>
+                        <button type="button" class="btn btn-primary btn-md pull-left btnReporte" id="detailsQCReport"><span class="glyphicon glyphicon-pushpin" aria-hidden="true"></span> QC Report</button>
+                    </div>
+                    <br />
+                    <br />
+                    <h4>STAGING</h4>
+                    <div>
+                        <table id="tabla_totales_staging_estilo_c" class="table table-sm table-striped table-hover ">
+                            <thead id="cabecera_tabla_totales_staging_estilo_c" class="cabecera_tabla"></thead>
+                            <tbody id="body_tabla_totales_staging_estilo_c"></tbody>
+                        </table>
+                    </div>
+                    <h4>PRINT</h4>
+
+                    <table id="tableGeneral" class="table table-sm table-striped table-hover ">
+                        <thead class="encabezado"></thead>
+                        <tbody class="tbodys"></tbody>
+                    </table>
+                </div>
+
+                <br />
+                <div id="div_tabla_talla" style="width: 100%; height:250px; overflow:auto;  ">
+                    <div id="div_estilo_batch" style=" overflow:auto; visibility:visible; ">
+                    </div>
+                    <table id="tableBatch" class="table table-sm table-striped table-hover ">
+                        <thead class="encabezado"></thead>
+                        <tbody class="tbodyBatch"></tbody>
+                    </table>
+                </div>
+                <br />
+                @if ((int)Session["idCargo"] == 5 || (int)Session["idCargo"] == 1)
+                {
+                    <div id="div_tabla_print" style="width: 100%; height:600px; ">
+                        <div id="div_estilo_print" style="visibility:hidden; ">
+                        </div>
+
+                        <button type="button" class="btn btn-primary" id="registrarNuevo" data-toggle="modal">
+                            <span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span> ADD NEW BATCH
+                        </button>
+
+                        <div class="container-fluid">
+                            <div class="form-row">
+                                <div class="form-group col-sm-4 ">
+                                    @Html.LabelFor(model => model.PrintShopC.Maquina, htmlAttributes: new { @class = "control-label " })
+                                    @Html.EnumDropDownListFor(model => model.PrintShopC.Maquinas, "Select Machine", new { @class = "form-control" })
+                                    @Html.ValidationMessageFor(model => model.PrintShopC.Maquinas, "", new { @class = "text-danger" })
+
+                                </div>
+                                <div class="form-group col-sm-4 ">
+                                    @Html.LabelFor(model => model.PrintShopC.EstadoPallet, htmlAttributes: new { @class = "control-label " })
+                                    <br />
+                                    @Html.RadioButtonFor(model => model.PrintShopC.EstadoPallet, "true", new { @class = "form-radio" }) @Html.Label("Complete")
+                                    @Html.RadioButtonFor(model => model.PrintShopC.EstadoPallet, "false", new { @class = "form-radio", Checked = "checked" }) @Html.Label("Incomplete")
+                                    @Html.ValidationMessageFor(model => model.PrintShopC.EstadoPallet, "", new { @class = "text-danger" })
+
+                                </div>
+                                <div class="form-group col-sm-4 ">
+                                    @Html.LabelFor(model => model.PrintShopC.Comentarios, htmlAttributes: new { @class = "control-label " })
+                                    <br />
+                                    @Html.TextAreaFor(model => model.PrintShopC.Comentarios, new { rows = 2, @style = "margin: 0px; width: 424px; height: 86px;", htmlAttributes = new { @class = "form-control" } })
+                                    @Html.ValidationMessageFor(model => model.PrintShopC.Comentarios, "", new { @class = "text-danger" })
+
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <br />
+                        <table id="tablePrint" class="table table-sm table-striped table-hover ">
+                            <thead class="encabezado"></thead>
+                            <tbody class="tbodyprint"></tbody>
+                        </table>
+
+                        <button type="button" id="guardarBatch" class="btn btn-success btn-md pull-right btn-sm" onclick="registrarBatch();"><span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span> Save</button>
+                        <button type="button" class="btn btn-success btn-md pull-right btn-sm" id="modificarBatch" onclick="event.preventDefault(); ConfirmRev(this);">
+                            <span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span> Modify
+                        </button>
+
+                    </div>
+                }
+                @if ((int)Session["idCargo"] == 15)
+                {
+                    <div class="pies-container">
+                        <div id="pie"></div>
+                    </div>
+                }
+
+            </div>
+        </div>
+        <div class="col-sm-1">
+            <div class="panel panel-primary" id="arte" style=" visibility:hidden; width:150px; height: 450px; ">
+                <div class="panel-heading">
+                    <h4>ART</h4>
+                </div>
+                <p class="tImagen">STYLE IMAGE</p>
+                <br />
+                <img id="imagenArte" class="center" />
+                <br />
+                <br />
+                <p class="tImagen">PNL IMAGE</p>
+                <br />
+                <img id="imagenPNL" class="center" />
+
+
+
+            </div>
+        </div>
+
+    </div>
+
+    <br />
+    <br />
+    <br />
+
+    <p>
+        <a href='@Url.Action("Index", "PrintShop")'>
+            <img src='@Url.Content("~/Content/img/backToPage.png")' id="flecha" title="Go Back" />
+        </a>
+    </p>
+</div>
+<script>
+    $(document).ready(function () {
+        $("#search").keyup(function () {
+            _this = this;
+            // Show only matching TR, hide rest of them
+            $.each($("#tabless tbody tr"), function () {
+                if ($(this).text().toLowerCase().indexOf($(_this).val().toLowerCase()) === -1)
+                    $(this).hide();
+                else
+                    $(this).show();
+            });
+        });
+    });
+
+    $("#searchPO").keyup(function () {
+        _this = this;
+        var dato = $(_this).val();
+        if (dato == "") {
+            var id = $("#IdPedido").val();
+            $("#NumeroPedido").val(id);
+            ObtenerNuevosEstilos();
+        } else {
+            var actionData = "{'estilo':'" + dato + "'}";
+            $.ajax({
+                url: "/Pedidos/ObtenerIdPedidoPorNombre/",
+                data: actionData,
+                type: "POST",
+                contentType: "application/json;charset=UTF-8",
+                dataType: "json",
+                success: function (jsonData) {
+                    var numPedido = jsonData.Data.numPedido;
+                    $("#NumeroPedido").val(numPedido);
+                    ObtenerNuevosEstilos();
+                },
+                error: function (errormessage) { alert(errormessage.responseText); }
+
+            });
+        }
+
+    });
+
+    function ObtenerNuevosEstilos() {
+        var id = $("#NumeroPedido").val();
+        if (id == "0") {
+            id = $("#IdPedido").val();
+        }
+        $.ajax({
+            url: "/Pedidos/Lista_Datos_Estilos_PO/" + id,
+            type: "POST",
+            contentType: "application/json;charset=UTF-8",
+            dataType: "json",
+            success: function (jsonData) {
+                var html = '';
+                var html2 = '';
+                var lista_estilo = jsonData.Data.listaItem;
+                var nombrePedido = jsonData.Data.nomPedido;
+                var nombreCliente = jsonData.Data.nombreCliente;
+                var nombreClienteF = jsonData.Data.nombreClienteFinal;
+                var nombreVPO = jsonData.Data.nomVPO;
+                $("#PO").empty();
+                $("#PO").html(nombrePedido);
+                $("#VPO").empty();
+                $("#VPO").html(nombreVPO);
+                $("#clienteF").empty();
+                $("#clienteF").html(nombreClienteF.NombreCliente);
+                $("#cliente").empty();
+                $("#cliente").html(nombreCliente.Nombre);
+                var noCliente;
+                html2 += '<tr><th style="border-top-left-radius:0px !important;"># </th> ';
+                $.each(lista_estilo, function (key, item) {
+                    noCliente = item.NumCliente;
+                });
+                if (noCliente == "2") {
+                    html2 += '<th>PO FANTASY#</th>';
+                }
+                html2 += '<th>ITEM</th>' +
+                    ' <th>ITEM DESCRIPTION</th>' +
+                    '<th>COLOR CODE</th>' +
+                    '<th>COLOR DESCRIPTION</th>' +
+                    '<th>QTY</th>' +
+                    '<th>PRICE</th>' +
+                    '<th>TOTAL</th>' +
+                    '</tr>';
+                $(".encabezadoPrint").html(html2);
+                $.each(lista_estilo, function (key, item) {
+                    html += '<tr  onclick="probar()">';
+                    html += '<td>' + item.IdItems + '</td>';
+                    if (item.NumCliente === "2" || item.NumCliente === 2) {
+                        var poF = item.POFantasy === null ? "-" : item.POFantasy;
+                        html += '<td>' + poF + '</td>';
+                    }
+                    html += '<td>' + item.EstiloItem + '</td>';
+                    html += '<td>' + item.ItemDescripcion.Descripcion + '</td>';
+                    html += '<td>' + item.CatColores.CodigoColor + '</td>';
+                    html += '<td>' + item.CatColores.DescripcionColor + '</td>';
+                    html += '<td>' + item.Cantidad + '</td>';
+                    html += '<td>' + item.Price + '</td>';
+                    html += '<td>' + item.Total + '</td>';
+
+                    html += '<td><a href="#" onclick="obtener_tallas_item(' + item.IdItems + ');" class="btn edit_driver edicion_driver" Title="Details Style"> <span class="glyphicon glyphicon-search" aria-hidden="true" style="padding: 0px !important;"></span></a></td>';
+
+                    html += '</tr>';
+
+                });
+                if (Object.keys(lista_estilo).length === 0) {
+                    html += '<tr class="odd"><td valign="middle" align="center" colspan="10" class="dataTables_empty">No styles were found for the PO.</td></tr>';
+
+                }
+                $('.tbody').html(html);
+                $("#div_estilos_orden").css("visibility", "visible");
+
+            },
+            error: function (errormessage) { alert(errormessage.responseText); }
+        });
+    }
+
+    $('#tabless tr').click(function (e) {
+        $('#tabless tr').removeClass('highlighted');
+        $(this).addClass('highlighted');
+    });
+
+    $(document).on('click', '.btnReporte', function () {
+        $("#loading").css('display', 'none');
+       
+        $("#QCReport_TurnosQC  option:first").prop("selected", "selected");
+        $("#contenedorReporte").css("display", "none");
+		$("#ModalQcReport").modal("show");
+    });
+
+    //Desplazamiento
+    $('.tbodyprint').keydown(function (e) {
+        var $table = $(this);
+        var $active = $('input:focus,select:focus', $table);
+        var $next = null;
+        var focusableQuery = 'input:visible,select:visible,textarea:visible';
+        var position = parseInt($active.closest('td').index()) + 1;
+        switch (e.keyCode) {
+            case 37:
+                $next = $active.parent('td').prev().find(focusableQuery);
+                break;
+            case 38:
+                $next = $active
+                    .closest('tr')
+                    .prev()
+                    .find('td:nth-child(' + position + ')')
+                    .find(focusableQuery);
+                break;
+            case 39:
+                $next = $active.closest('td').next().find(focusableQuery);
+                break;
+            case 40:
+                $next = $active
+                    .closest('tr')
+                    .next()
+                    .find('td:nth-child(' + position + ')')
+                    .find(focusableQuery);
+                break;
+        }
+        if ($next && $next.length) {
+            $next.focus();
+        }
+    });
+    function obtenerListaPrint(IdEstiloInf) {
+        var orders = new DevExpress.data.CustomStore({
+            loadMode: "raw",
+            load: function (loadOptions) {
+                var d = $.Deferred();
+                $.ajax({
+                    url: "/Pedidos/Info_PrintShop_Grafica/" + parseInt(IdEstiloInf),
+                    type: "POST",
+                    contentType: "application/json;charset=UTF-8",
+                    dataType: "json",
+                    success: function (jsonData) {
+                        debugger
+                        var lista_tallas = jsonData.Data.listaTalla;
+
+                        d.resolve(lista_tallas);
+
+                    },
+                    error: function (e) {
+                        alert("error: " + e.responseText);
+                    }
+                });
+                return d.promise();
+            },
+            update: function (key, values) {
+
+            }
+        });
+
+
+        var legendSettings = {
+            orientation: "horizontal",
+            itemTextPosition: "right",
+            horizontalAlignment: "center",
+            verticalAlignment: "bottom",
+            rowCount: 2,
+            columnCount: 5,
+            font: {
+                size: 20
+            }
+        },
+            seriesOptions = [{
+                argumentField: "Talla",
+                valueField: "Porcentaje",
+                label: {
+                    visible: true, format: {
+                        type: "fixedPoint",
+                        precision: 1
+                    },
+                    font: {
+                        size: 20
+                    },
+                    connector: {
+                        visible: true,
+                        width: 0.5
+                    },
+                    position: "columns",
+                    customizeText: function (arg) {
+                        return arg.argumentText + " ( " + arg.valueText + " %)";
+                    }
+                }
+            }],
+            sizeGroupName = "piesGroup";
+
+        $("#pie").dxPieChart({
+            dataSource: orders,
+            sizeGroup: sizeGroupName,
+            palette: "bright",
+            title: "PRINTED SIZES",
+            legend: legendSettings,
+            series: seriesOptions
+        });
+    }
+
+</script>

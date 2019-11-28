@@ -1,0 +1,425 @@
+﻿@{
+    ViewBag.Title = "CUSTOMER";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+</div>
+<link href="~/Content/base_m.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+<link href="~/Content/base_m.css" rel="stylesheet" />
+
+<script>
+    $(document).on("input", ".numeric", function () {
+        this.value = this.value.replace(/\D/g, '');
+    });
+    $(document).on("input", ".validacion", function () {
+        var c = this.selectionStart,
+            r = /[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ .()!@@/#%-]/,
+            v = $(this).val();
+        if (r.test(v)) {
+            $(this).val(v.replace(r, ''));
+            c--;
+        }
+        this.setSelectionRange(c, c);
+    });
+    $(document).on("click", "a", function () { $("#loading").css('display', 'none'); });
+    $('.js-example-basic-single').select2();
+    $(document).ready(function () {
+        buscar_pedidos_lista_entregas();
+        $('#tabla_lista_entregas').css('visibility', 'hidden');
+        $('.rows_tabla_lista_entregas').html('');
+        $("#caja_inicio_lista_entrega").html('');
+        $("#caja_final_lista_entrega").html(''); 
+        $('.js-example-basic-single').select2();
+    });
+    $(function () {
+        $.datepicker.regional['es'] = {
+            closeText: 'Cerrar',
+            prevText: '<Ant',
+            nextText: 'Sig>',
+            currentText: 'Hoy',
+            monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+            monthNamesShort: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+                'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+            dayNames: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+            dayNamesShort: ['Dom', 'Lun', 'Mar', 'Mié', 'Juv', 'Vie', 'Sáb'],
+            dayNamesMin: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'],
+            weekHeader: 'Sm',
+            dateFormat: 'yy-mm-dd',
+            firstDay: 1,
+            isRTL: false,
+            showMonthAfterYear: false,
+            yearSuffix: ''
+        };
+        $.datepicker.setDefaults($.datepicker.regional['es']);
+        $('[data-toggle="tooltip"]').tooltip();
+        $('#caja_fecha_recibo').datepicker();
+        $('#caja_busqueda_fecha_trim_recibo').datepicker();
+        $('#caja_inicio').datepicker();
+        $('#caja_final').datepicker();
+        $('#caja_inicio_lista_entrega').datepicker();
+        $('#caja_final_lista_entrega').datepicker();
+
+
+        //$('.toolxd').tooltip();
+    });//DATEPICKER
+/***********************************************************************************************************************************************************************/
+    function buscar_pedidos_lista_entregas() {
+        $("#load_trim").css('display', 'inline');
+        $.ajax({
+            url: '/Trims/buscar_pedidos',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                var html = '';
+                html += '<option  value="0">SELECT</option>';
+                $.each(result, function (key, i) {
+                    html += '<option  value="' + i.id_pedido + '">' + i.pedido + '</option>';
+                });
+                $('#caja_pedido_lista_entrega').html(html);
+                $('.js-example-basic-single').select2();
+                $("#load_trim").css('display', 'none');
+            }
+        });
+    }
+    var lista_entregas;
+    $(document).on("change", "#caja_pedido_lista_entrega", function () {
+        $("#load_trim").css('display', 'inline');
+        $.ajax({
+            url: '/Trims/buscar_entregas_orden',
+            data: "{'orden':'" + $('#caja_pedido_lista_entrega').val() + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                lista_entregas = result;
+                crear_tabla_entregas();
+                $("#load_trim").css('display', 'none');
+            }
+        });
+    });
+    function crear_tabla_entregas() {
+        $("#load_trim").css('display', 'inline');
+        $('.rows_tabla_lista_entregas').html('');
+        $.each(lista_entregas, function (key, e) {
+            var html = '';
+            var total_items = 0;
+            $.each(e.lista_entregas, function (key, i) { total_items++;  });
+            html += '<tr style="">';
+            //html += '<td rowspan="' + total_items + '">';
+            //html+='<span title="Delete full delivery" onclick="delete_delivery_completo('+e.id_entrega+')" class="glyphicon glyphicon-remove-sign" aria-hidden="true"></span></td>';
+            html += '<td rowspan="' + total_items + '">';
+            if (e.id_pedido != 0) { html += '<p>'+e.pedido+'</p>'; }
+            html += '<p>' + e.fecha + '</p></td>';
+            html += '<td rowspan="'+total_items+'">'+e.entrega+'</td>';
+            html += '<td rowspan="' + total_items + '">' + e.recibe + '</td>';
+            $.each(e.lista_entregas, function (key, i) {
+                var color;
+                if (i.id_inventario != 0) { color = 'white'; } else { if (i.restante >= 1) { color='#ffdcdc'; } else {color='#d0ffd0'; } }
+                if (i.id_trim_orden != 0) {
+                    html += '<td style="background:'+color+';border: solid 0px white;">' + i.item + ' '+i.estilo+' '+i.talla+'</td>';
+                } else {
+                    html += '<td style="background:'+color+';border: solid 0px white;">' + i.item + '</td>';
+                }
+                if (i.id_inventario != 0) {
+                    html += '<td style="background:' + color + ';border: solid 0px white;"> </td>';
+                } else {
+                    html += '<td style="background:' + color + ';border: solid 0px white;">' + i.total_orden + '</td>';
+                }
+                html += '<td style="background:'+color+';border: solid 0px white;">' + i.total + '</td>';//ENTREGADO
+                if (i.id_inventario != 0) {
+                    html += '<td style="background:' + color + ';border: solid 0px white;"> </td>';
+                } else {
+                    if (i.restante >= 1) {
+                         html += '<td style="background:' + color + ';border: solid 0px white;">' + i.restante + '</td>';
+                    } else {
+                        html += '<td style="background:' + color + ';border: solid 0px white;">0</td>';
+                    }
+                }
+                html += '<td style="background:'+color+';border: solid 0px white;">' + i.comentarios + '</td>';
+                /*html += '<td style="background:' + color + ';border: solid 0px white;">';
+                html += '<span title="Return item"  onclick="return_items_entregados(\'' + i.id_entrega_item + '*' + i.total + '*'+i.item + '\')" class="glyphicon glyphicon-share-alt" aria-hidden="true"></span></td>';
+                html += '<td style="background:' + color + ';border: solid 0px white;">';
+                html += '<span title="Delete item" onclick="delete_delivery_individual(' + i.id_entrega_item + ')" class="glyphicon glyphicon-remove-circle" aria-hidden="true"></span></td>';
+                */
+                html += '</tr>';
+            });
+            $('.rows_tabla_lista_entregas').append(html);
+        });
+        $('#tabla_lista_entregas').css('visibility', 'visible');
+        $("#load_trim").css('display', 'none');
+    }
+    function buscar_entregas_por_fechas() {
+        var inicio = 0, final = 0;
+        if ($('#caja_inicio_lista_entrega').val() != '') {
+            inicio = $('#caja_inicio_lista_entrega').val();
+        }
+        if ($('#caja_final_lista_entrega').val() != '') {
+            final = $('#caja_final_lista_entrega').val();
+        }
+        $.ajax({
+            url: '/Trims/obtener_entregas_fechas',
+            data: "{'inicio':'" + inicio + "','final':'" + final + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                lista_entregas = result;
+                crear_tabla_entregas();
+            }
+        });
+    }
+         
+</script>
+<style>
+    input[type=checkbox] {
+        /* Double-sized Checkboxes */
+        -ms-transform: scale(2); /* IE */
+        -moz-transform: scale(2); /* FF */
+        -webkit-transform: scale(2); /* Safari and Chrome */
+        -o-transform: scale(2); /* Opera */
+        padding: 10px;
+    }
+
+    /* Might want to wrap a span around your checkbox text */
+    .checkboxtext {
+        /* Checkbox text */
+        font-size: 110%;
+        display: inline;
+    }
+
+    input[type='radio']:after {
+        width: 15px;
+        height: 15px;
+        border-radius: 15px;
+        top: -2px;
+        left: -1px;
+        position: relative;
+        background-color: #a7afb5;
+        content: '';
+        display: inline-block;
+        visibility: visible;
+        border: 0px solid white;
+    }
+
+    input[type='radio']:checked:after {
+        width: 15px;
+        height: 15px;
+        border-radius: 15px;
+        top: -2px;
+        left: -1px;
+        position: relative;
+        background-color: #ecaf2d;
+        content: '';
+        display: inline-block;
+        visibility: visible;
+        border: 0px solid white;
+    }
+
+    .cabecera_tabla2 {
+        /*background:#3479bf; #46a772*/
+        background: white;
+        color: #3479bf;
+        pointer-events: none;
+        cursor: not-allowed;
+    }
+
+    .cabecera_tabla {
+        /*background:#3479bf; #46a772*/
+        background: #3479bf;
+        color: white;
+        pointer-events: none;
+        cursor: not-allowed;
+    }
+
+    .select2-container--default .select2-selection--single {
+        display: block !important;
+        /*width: 100% !important;*/
+        height: 34px !important;
+        padding: 6px 12px !important;
+        font-size: 14px !important;
+        line-height: 1.42857143 !important;
+        color: #555 !important;
+        background-color: #fff !important;
+        background-image: none !important;
+        border: 1px solid #ccc !important;
+        border-radius: 4px !important;
+        -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075) !important;
+        box-shadow: inset 0 1px 1px rgba(0,0,0,.075) !important;
+        -webkit-transition: border-color ease-in-out .15s,-webkit-box-shadow ease-in-out .15s !important;
+        -o-transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s !important;
+        transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s !important;
+    }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #444;
+            line-height: 20px;
+        }
+
+    .modal-dialog {
+        width: 75% !important;
+        padding: 2em;
+        height: 90% !important;
+        min-height: 90% !important;
+    }
+
+    .modal-content {
+        height: 90% !important;
+    }
+
+    .modal-lg {
+        max-width: 80% !important;
+    }
+
+    a {
+        text-decoration: none !important;
+    }
+
+    .boton_barra_menu, .btn-info {
+        color: #fff;
+        background-color: #3479bf !important;
+        border-color: #3479bf !important;
+    }
+
+    .modal {
+        /*z-index: 4 !important;*/
+    }
+
+    .dataTables_filter {
+    }
+
+    .dropbtn {
+        background-color: #3479bf;
+        color: white;
+        padding: 16px;
+        /*padding: 0.40em;*/
+        font-size: 18px;
+        border: none;
+    }
+
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: white;
+        color: black;
+        min-width: 160px;
+        box-shadow: 1px 5px 25px 1px rgba(0,0,0,0.2);
+        z-index: 1;
+    }
+
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+    .menu {
+        background: #3479bf;
+        border-radius: 5px;
+        border: solid 1px #3479bf;
+        margin-bottom: .5em;
+        margin: 1em;
+    }
+
+    .dropdown-content a:hover {
+        /*background-color: #f1f1f1;
+        color: black;*/
+        background-color: #61b363;
+        color: white;
+    }
+
+    .dropdown:hover .dropdown-content {
+        display: block;
+    }
+
+
+    .modal-header-primary {
+        color: #fff;
+        padding: 9px 15px;
+        border-bottom: 1px solid #eee;
+        background-color: #3479bf;
+        -webkit-border-top-left-radius: 5px;
+        -webkit-border-top-right-radius: 5px;
+        -moz-border-radius-topleft: 5px;
+        -moz-border-radius-topright: 5px;
+        border-top-left-radius: 5px;
+        border-top-right-radius: 5px;
+    }
+
+    .x {
+        transition: transform .25s ease-in-out;
+        color: white !important;
+    }
+
+        .x:hover {
+            transform: rotate(180deg);
+            color: white !important;
+        }
+
+        .x:before {
+            transform: rotate(45deg);
+            transform-origin: center;
+        }
+
+        .x:after {
+            transform: rotate(-45deg);
+            transform-origin: center;
+        }
+
+    tr {
+        cursor: pointer;
+    }
+</style>
+<div id="load_ct" class="load">
+    <div id="spinner" class="imagen_loading" style=""></div>
+</div>
+<div class="container-fluid" style="padding-left:7em; padding-right:2em;">
+    <h2 style="font-weight: bold; color: #3479bf; margin-left: 1em;">TRIMS</h2>
+    <div class="row">
+        <div class="form-group">
+            <div class="form-group col-md-2 ">
+                <label for="caja_pedido_entrega">Order </label><br />
+                <select class="form-control js-example-basic-single " style="width:100%;" id="caja_pedido_lista_entrega"></select>
+            </div>
+            <div class="form-group col-sm-2 ">
+                <label class=" col-form-label">From </label>
+                <input type="text" class=" form-control validacion entrega_item" maxlength="150" id="caja_inicio_lista_entrega">
+            </div>
+            <div class="form-group col-sm-2  ">
+                <label class=" col-form-label">To </label>
+                <input type="text" class=" form-control validacion entrega_item" maxlength="150" id="caja_final_lista_entrega">
+            </div>
+            <div class="form-group col-md-1 stock_entrega">
+                <label for="caja_request_entrega"> </label>
+                <button type="button" class="btn btn-success mb-2" onclick="buscar_entregas_por_fechas()" style="margin-top: 0.3em;">Search by dates</button>
+            </div>
+        </div>
+    </div>
+
+    <table id="tabla_lista_entregas" class="fold-table table table-striped table-hover " style="margin-top:2em;">
+        <thead class="cabecera_tabla_lista_entregas" style="background:#3479bf; color:white;pointer-events: none;">
+            <tr>               
+                <th>Date</th>
+                <th>From</th>
+                <th>To</th>
+                <th>Item</th>
+                <th>Order</th>
+                <th>Total</th>
+                <th>Remaining</th>
+                <th>Comments</th>
+            </tr>
+        </thead>
+        <tbody class="rows_tabla_lista_entregas"></tbody>
+    </table>
+        
+
+</div>
+

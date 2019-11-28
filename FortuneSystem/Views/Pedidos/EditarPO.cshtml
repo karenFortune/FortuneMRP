@@ -1,0 +1,399 @@
+﻿@model FortuneSystem.Models.Pedidos.OrdenesCompra
+
+@{
+	ViewBag.Title = "Editar PO";
+
+}
+
+
+@section scripts{
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+	<link rel="stylesheet" href="~/Content/alertifyjs/css/alertify.min.css" />
+	<link rel="stylesheet" href="~/Content/alertifyjs/css/themes/default.min.css" />
+	<link href="~/Content/select2-4.0.5/dist/css/select2.min.css" rel="stylesheet" />
+	<script src="~/Content/alertifyjs/alertify.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+	<script src="~/Scripts/general/obtenerListaTallasPorGenero.js"></script>
+	<script type="text/javascript" src="~/Content/TableDnD-master/js/jquery.tablednd.js"></script>
+
+	<link href="@Url.Content("~/Content/themes/base/jquery-ui.min.css")" rel="stylesheet" />
+	@Scripts.Render("~/Content/jquery-ui-1.12.1.custom/jquery-3.3.1.min.js")
+
+	<script src="~/Scripts/bootstrap.js"></script>
+}
+
+<script type="text/javascript">
+    function redireccionarPagina() {
+        window.location = '/pedidos/Index';
+	}
+	var contador = 0;
+		$(document).on("click", ".classEditMillPo", function () {
+			var rowCount = $('.data-MPO').length + 1;
+
+		var MPOdiv = '<tr class="data-MPO">' +
+			'<td class="mover" width="10%"><span class="glyphicon glyphicon-fullscreen" aria-hidden="true"></span></td>' +
+			'<td class="datoMPO" style="width:1px; display:none;"><input type="text"  name="id-mpo" id="id-mpo" class="form-control mpo" value="' + 0 + '"/ readonly></td>' +
+			'<td class="datoMPO" width="20%"><input type="text"  name="f-mpo" id="f-mpo" style="text-transform:uppercase" class="form-control desMill mpo" style="width: 80%;" /></td>' +
+			'<td><button type="button" id="btnDelete" class="mDelete btn btn btn-danger btn-xs" value="4">Delete</button></td>' +
+				'</tr>';
+
+		$('#tablaMPO').append(MPOdiv);
+	});
+
+	$(document).on("click", ".millDelete", function () {
+		var $row = $(this).closest("tr");
+		debugger
+		var $text = $row.find(".idM").val();
+		eliminarMillPO($text);
+            $(this).closest("tr").remove();
+	});
+
+	$(document).on("click", ".mDelete", function () {
+		$(this).closest("tr").remove();
+	});
+
+
+	$(document).ready(function () {
+
+        /* $("#PO").on('input', function () {
+             var val = this.value;
+             this.value = val.replace(/[^A-Z\u00f1\u00d1\u0020\s\^0-9]/g, '');
+         });*/
+        $("#TotalUnidades").on('input', function () {
+            var val = this.value;
+            this.value = val.replace(/[^0-9]/g, '');
+        });
+
+        $('#modificarPO').click(function (e) {
+            var error = 0;
+            $(".nuevo_po").each(function () {
+                error;
+                var id = $(this).attr('id');
+                if ($(this).val() == '') {
+                    $("#" + id).css('border', '2px solid #e03f3f');
+                    error++;
+                } else {
+                    $("#" + id).css('border', '1px solid #cccccc');
+                }
+			});
+			debugger
+			var lista = [];
+            lista = obtenerListaMPO();
+			var datos = JSON.stringify(lista);
+            var obj = datos;
+            obj = JSON.parse(obj);
+            if (error != 0) {
+                var alert = alertify.alert("Menssage", 'All fields are required.').set('label', 'Aceptar');
+                alert.set({ transition: 'zoom' });
+                alert.set('modal', false);
+            } else {
+                $("#loading").css('display', 'inline');
+                $("#modificarPO").prop("disabled", true);
+                var idPedido = $("#IdPedido").val();
+                var po = $("#PO").val();
+                var VPO = $("#VPO").val();
+                var FechaOrdenFinal = $("#FechaOrdenFinal").val();
+                var FechaCancelada = $("#FechaCancelada").val();
+                var FechaCancel = $("#FechaCancel").val();
+                var FechaOrden = $("#FechaOrden").val();
+                var Cliente = $("#selectCliente option:selected").val();
+                var ClienteFinal = $("#selectClienteFinal option:selected").val();
+                var TipoOrden = $("#selectTipoOrden option:selected").val();
+                var TotalUnidades = $("#TotalUnidades").val();
+                $("#editarEstiloPOModal").modal("hide");
+                actualizarPO(idPedido, po, VPO, FechaCancelada, FechaOrdenFinal, Cliente, ClienteFinal, TotalUnidades, TipoOrden, obj);
+
+                alertify.set('notifier', 'position', 'top-right');
+                alertify.notify('The purchase order was modified correctly.', 'success', 5, null);
+
+            }
+
+		});
+		buscar_MillPO();
+	});
+
+	    function eliminarMillPO(mpo) {
+           $.ajax('@Url.Action("EliminarMillPO", "Pedidos")', {
+            data: { id: mpo},
+            method: 'post'
+        }).done(function (data) {        });
+                  alertify.set('notifier', 'position', 'top-right');
+                  alertify.notify('The millPO was removed correctly.', 'success', 5, null);
+    }
+
+	function obtenerListaMPO() {
+		var r = 0; var c = 0; var i = 0; var cadena = new Array(2);
+            cadena[0] = ''; cadena[1] = '';
+            var nFilas = $("#tablaMPO tbody>tr").length;
+            var nColumnas = $("#tablaMPO tr:last td").length;
+            $('#tablaMPO tbody>tr').each(function () {
+                r = 0;
+                c = 0;
+                $(this).find("input").each(function () {
+                    $(this).closest('td').find("input").each(function () {
+                        cadena[c] += this.value + "*" ;
+                        c++;
+                    });
+
+                    r++;
+                    });
+                });
+
+            var error = 0;
+            $('#tablaMPO').find('td.datoMPO').each(function (i, el) {
+
+                var valor = $(el).children().val();
+
+                    if ($(el).children().val() == '') {
+                        error++;
+                        $(el).children().css('border', '2px solid #e03f3f');
+
+                    } else {
+                        $(el).children().css('border', '1px solid #cccccc');
+
+                    }
+		});
+
+		if (error == 0) {
+                return (cadena);
+            }
+
+	}
+	function buscar_MillPO() {
+		var tempScrollTop = $(window).scrollTop();
+        var id = $("#IdPedido").val();
+        $.ajax({
+            url: "/Pedidos/Lista_MillPO/" + id,
+            type: "POST",
+            contentType: "application/json;charset=UTF-8",
+            dataType: "json",
+            success: function (jsonData) {
+                var listaT = jsonData.Data.listMpo;
+				var html = '';
+				var cont = 1;
+                $.each(listaT, function (key, item) {
+
+                    html += '<tr>';
+					html += '<td class="mover" style="width:2em;"><span class="glyphicon glyphicon-fullscreen" aria-hidden="true"></span></td>';
+					html += '<td class="datoMPO" style="width:1px; display:none;"><input type="text"  name="id-mpo" id="id-mpo" class="form-control idM mpo" value="' + item.IdMillPO + '"/ readonly></td>';
+                    html += '<td class="datoMPO" width="25%"><input type="text"  name="f-mpo" id="f-mpo" style="text-transform:uppercase" class="form-control desMill mpo" style="width: 80%;" value="' + item.MillPO + '"/></td>';
+                    html += '<td><button type="button" id="btnDelete" class="millDelete btn btn btn-danger btn-xs" value="4">Delete</button></td>';
+					cont++;
+					html += '</tr>';
+					contador = item.IdMillPO;
+				});
+
+               $('.tbodyMPO').html(html);
+
+                $(window).scrollTop(tempScrollTop);
+            },
+            error: function (errormessage) { alert(errormessage.responseText); }
+        });
+	}
+
+
+    function validar() {
+        if ($('#PO').val().length == 0) {
+            // $("#nuevoPO").prop("disabled", true);
+        } else {
+            $("#nuevoPO").prop("disabled", false);
+        }
+    }
+
+
+    function actualizarPO(idPedido, po, VPO, FechaCancel, FechaOrden, Cliente, ClienteFinal, TotalUnidades, TipoOrden, obj) {
+        debugger
+        $.ajax({
+            url: "/Pedidos/ActualizarInfPO",
+            data: { id:idPedido, po: po, VPO: VPO, FechaCancel: FechaCancel, FechaOrden: FechaOrden, Cliente: Cliente, ClienteFinal: ClienteFinal, TotalUnidades: TotalUnidades, IdTipoOrden: TipoOrden, ListaMPO: obj },
+            cache: false,
+           type: "POST",
+           async: true,
+           dataType: "json",
+            success: function (data) {
+                //setTimeout("redireccionarPagina()", 1000);
+                setTimeout("redireccionarPagina()", function () { $("#loading").css('display', 'none'); }, 1000);
+
+            },
+            error: function (xhr, ajaxOptions, thrownError) {
+            }
+        });
+    }
+
+    $(function () {
+        $.datepicker.regional['es'] = {
+            closeText: 'Cerrar',
+            prevText: '<Ant',
+            nextText: 'Sig>',
+            currentText: 'Hoy',
+            monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+            monthNamesShort: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+                'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+            dayNames: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+            dayNamesShort: ['Dom', 'Lun', 'Mar', 'Mié', 'Juv', 'Vie', 'Sáb'],
+            dayNamesMin: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'],
+            weekHeader: 'Sm',
+            dateFormat: 'mm/dd/yy',
+            firstDay: 1,
+            isRTL: false,
+            showMonthAfterYear: false,
+            yearSuffix: ''
+        };
+        $.datepicker.setDefaults($.datepicker.regional['es']);
+
+        $('#FechaOrden').datepicker();
+        $('#FechaOrdenFinal').datepicker();
+        $('#FechaCancelada').datepicker();
+        $('#FechaCancel').datepicker();
+    })
+
+
+	$('#selectCliente').select2({
+		dropdownParent: $("#editarEstiloPOModal")
+    });
+
+	$('#selectTipoOrden').select2({
+		dropdownParent: $("#editarEstiloPOModal")
+    });
+
+	$("#selectClienteFinal").select2({
+		dropdownParent: $("#editarEstiloPOModal")
+    });
+
+</script>
+<style>
+	.ui-autocomplete {
+		height: 200px;
+		overflow-y: scroll;
+		overflow-x: hidden;
+	}
+
+	.classMPO {
+		color: white !important;
+		background: #709ec5 !important;
+	}
+</style>
+
+</div>
+@*@using (Ajax.BeginForm("CrearPO", "Pedidos", new AjaxOptions { HttpMethod = "POST" }))*@
+@using (Html.BeginForm())
+
+{
+	@Html.AntiForgeryToken()
+
+	<div class="form-horizontal">
+
+		@Html.ValidationSummary(true, "", new { @class = "text-danger" })
+		@Html.HiddenFor(model => model.IdPedido)
+		<div class="panel panel-primary">
+			<div class="panel-heading">
+				<h4>Purchase Order</h4>
+			</div>
+			<div class="container-fluid">
+
+				<div class="form-row">
+					<div class="form-group col-md-4">
+						@Html.LabelFor(model => model.PO, htmlAttributes: new { @class = "control-label " })<br />
+						@Html.EditorFor(model => model.PO, new { htmlAttributes = new { @class = "form-control nuevo_po", @style = "text-transform:uppercase" } })
+						@Html.ValidationMessageFor(model => model.PO, "", new { @class = "text-danger" })
+					</div>
+					<div class="form-group col-md-4">
+						@Html.LabelFor(model => model.VPO, htmlAttributes: new { @class = "control-label " })<br />
+						@Html.EditorFor(model => model.VPO, new { htmlAttributes = new { @class = "form-control nuevo_po", @style = "text-transform:uppercase" } })
+						@Html.ValidationMessageFor(model => model.VPO, "", new { @class = "text-danger" })
+					</div>
+					<div class="form-group col-md-4">
+						@Html.LabelFor(model => model.FechaCancel, htmlAttributes: new { @class = "control-label" })<br />
+						@Html.EditorFor(model => model.FechaCancelada, new { htmlAttributes = new { @class = "form-control date-picker nuevo_po" } })
+						@Html.ValidationMessageFor(model => model.FechaCancel, "", new { @class = "text-danger" })
+					</div>
+				</div>
+			</div>
+			<div class="container-fluid">
+				<div class="form-row">
+					<div class="form-group col-md-4">
+						@Html.LabelFor(model => model.FechaOrden, htmlAttributes: new { @class = "control-label" })<br />
+						@Html.EditorFor(model => model.FechaOrdenFinal, new { htmlAttributes = new { @class = "form-control date-picker nuevo_po" } })
+						@Html.ValidationMessageFor(model => model.FechaOrden, "", new { @class = "text-danger" })
+					</div>
+					<div class="form-group col-md-4">
+						@Html.LabelFor(model => model.Cliente, htmlAttributes: new { @class = "control-label " }) <br />
+						@Html.DropDownList("Nombre", (SelectList)ViewBag.listCliente, new { @class = "form-control nuevo_po", @id = "selectCliente", @name = "state" })
+						@Html.ValidationMessageFor(model => model.Cliente, "", new { @class = "text-danger" })
+					</div>
+					<div class="form-group col-md-4">
+						@Html.LabelFor(model => model.ClienteFinal, htmlAttributes: new { @class = "control-label" }) <br />
+						@Html.DropDownList("NombreCliente", (SelectList)ViewBag.listClienteFinal, new { @class = "form-control nuevo_po", @id = "selectClienteFinal", @name = "state" })
+						@Html.ValidationMessageFor(model => model.ClienteFinal, "", new { @class = "text-danger" })
+					</div>
+				</div>
+
+			</div>
+			<div class="container-fluid">
+
+				<div class="form-row">
+					<div class="form-group col-md-4">
+						@Html.LabelFor(model => model.IdTipoOrden, htmlAttributes: new { @class = "control-label" }) <br />
+						@Html.DropDownList("TipoOrden", (SelectList)ViewBag.listTipoOrden, new { @class = "form-control nuevo_po", @id = "selectTipoOrden", @name = "state" })
+						@Html.ValidationMessageFor(model => model.IdTipoOrden, "", new { @class = "text-danger" })
+					</div>
+					<div class="form-group col-md-4">
+						@Html.LabelFor(model => model.TotalUnidades, htmlAttributes: new { @class = "control-label" })
+						@Html.EditorFor(model => model.TotalUnidades, new { htmlAttributes = new { @class = "form-control nuevo_po" } })
+						@Html.ValidationMessageFor(model => model.TotalUnidades, "", new { @class = "text-danger" })
+					</div>
+
+				</div>
+			</div>
+			<div class="container-fluid">
+
+				<div class="form-group">
+					<div class="panel-group">
+						<div class="panel panel-title">
+							<div class="panel-heading classMPO">Reception of Mill PO</div>
+							<div class="panel-body">
+								<button type="button" id="btnAddMPO" class="btn btn-xs btn-primary classEditMillPo">+ New Mill PO</button>
+								<table class="table" id="tablaMPO" style="margin:0px; padding:0px;">
+									<thead>
+										<tr>
+											<th class="index"><span class="glyphicon glyphicon-fullscreen" aria-hidden="true" /></th>
+											<th>MILL PO</th>
+											<th></th>
+										</tr>
+									</thead>
+									<tbody class="tbodyMPO"></tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+
+
+				<div class="form-group">
+					<br />
+					<div class="text-center margin-bottom col-sm-12">
+						<button type="button" id="modificarPO" class="btn btn-success" data-toggle="modal">
+							<span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span> Modify PO
+						</button>
+					</div>
+					<br />
+					<br />
+				</div>
+			</div>
+
+
+
+		</div>
+	</div>
+
+}
+
+
+
+
+
+
+

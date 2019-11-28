@@ -1,0 +1,218 @@
+﻿@model FortuneSystem.Models.Pedidos.OrdenesCompra
+
+@{
+    ViewBag.Title = "WIP";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+
+<!-- Kendo ui -->
+<link rel="stylesheet" type="text/css" href="~/Content/kendo/styles/kendo.common-material.min.css" />
+<link rel="stylesheet" type="text/css" href="~/Content/kendo/styles/kendo.material.min.css" />
+<link rel="stylesheet" type="text/css" href="~/Content/kendo/styles/kendo.material.mobile.min.css" />
+<script type="text/javascript" src="~/Content/kendo/js/jquery.min.js"></script>
+<script type="text/javascript" src="~/Content/kendo/js/kendo.all.min.js"></script>
+
+
+<style>
+    .content {
+        text-align: justify;
+        margin-top: 25px;
+    }
+
+    #longtabs {
+        margin-top: 20px;
+    }
+
+    #scrolledtabs {
+        margin-top: 20px;
+    }
+
+    #tabs {
+        margin-top: 60px;
+    }
+
+    .caption {
+        font-size: 16px;
+        padding-bottom: 3px;
+        padding-left: 10px;
+    }
+
+    .left-aligned {
+        text-align: left;
+    }
+
+</style>
+@{
+    if (TempData["itemEditar"] != null)
+    {
+        <script type="text/javascript">
+            alertify.set('notifier', 'position', 'top-right');
+            alertify.notify(@Html.Raw(Json.Encode(TempData["itemEditar"])), 'success', 5, null);
+
+        </script>
+    }
+    if (TempData["itemEditarError"] != null)
+    {
+        <script type="text/javascript">
+            alertify.set('notifier', 'position', 'top-right');
+            alertify.notify(@Html.Raw(Json.Encode(TempData["itemEditarError"])), 'error', 5, null);
+
+        </script>
+    }
+
+    if (TempData["cancelarPO"] != null)
+    {
+        <script type="text/javascript">
+            alertify.set('notifier', 'position', 'top-right');
+            alertify.notify(@Html.Raw(Json.Encode(TempData["cancelarPO"])), 'success', 5, null);
+
+        </script>
+    }
+
+
+}
+
+</div>
+<div class="container-fluid" style="margin-left:15em; margin-right:5em; ">
+    <div class="panel panel-primary" id="listaWIP">
+        <div class="panel-heading">
+            <h2>WIP</h2>
+        </div>
+        <br />
+        <div id="botones"></div>
+        <br />
+        <div id="grid"></div>
+        <div class="demo-container">
+            <div id="tabs">
+                <div class="tabs-container"></div>
+                <div class="content  dx-fieldset">
+                    <div class="dx-field gridWip" style="display:inline;">
+
+                        <div id="gridContainer"></div>
+
+                    </div>
+                    <br />
+                    <div class="dx-field-value idTabs">
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript" charset="utf-8">
+    $(document).ready(function () {
+        var crudServiceBaseUrl = "https://demos.telerik.com/kendo-ui/service",
+            dataSource = new kendo.data.DataSource({
+                transport: {
+                    read: {
+                        url: "/WIP/ListadoPedido",
+                        dataType: "json"
+                    },
+                    update: {
+                        url: crudServiceBaseUrl + "/Products/Update",
+                        dataType: "jsonp"
+                    },
+                    destroy: {
+                        url: crudServiceBaseUrl + "/Products/Destroy",
+                        dataType: "jsonp"
+                    },
+                    create: {
+                        url: crudServiceBaseUrl + "/Products/Create",
+                        dataType: "jsonp"
+                    },
+                    parameterMap: function (options, operation) {
+                        if (operation !== "read" && options.models) {
+                            return { models: kendo.stringify(options.models) };
+                        }
+                    }
+                },
+               // batch: true,
+                pageSize: 15,
+                serverPaging: true,
+                serverFiltering: true,
+                schema: {
+                    model: {
+                        id: "IdPedido",
+                        CatCliente: "CatCliente",
+                        CatClienteFinal: "CatClienteFinal",
+                        CatTipoBrand: "CatTipoBrand",
+                        CatTipoOrden: "CatTipoOrden",
+                        POSummary: "POSummary",
+                        CatComentarios: "CatComentarios",
+                        fields: {
+                            IdPedido: { editable: false, nullable: true },
+                            FechaRecOrden: { type: "date", format: "dd/MM/yyyy"}
+                        }
+                    }
+                }
+            });
+   
+
+        $("#grid").kendoGrid({
+            dataSource: dataSource,
+            sortable: true,
+            resizable: true,
+            scrollable: true,
+            filterable: {
+                mode: "row"
+            },
+            pageable: true,
+            height: 700,
+            width: 'auto',
+            dataBound: function () {
+                for (var i = 0; i < this.columns.length; i++) {
+                    this.autoFitColumn(i);
+                }
+            },
+            toolbar: ["save", "cancel"],
+            columns: [
+                {
+                    field: "CatCliente.Nombre", title: "CUSTOMER", filterable: {
+                        cell: {
+                            showOperators: false
+                        }
+                    }},
+                { field: "CatClienteFinal.NombreCliente", title: "RETAILER"},
+                { field: "FechaRecOrden", title: "PO RECVD DATE"},
+                { field: "PO", title: "PO NO" },
+                { field: "CatTipoBrand.TipoBrandName", title: "BRAND NAME"},
+                { field: "VPO", title: "AMT PO" },
+                { field: "CatTipoOrden.TipoOrden", title: "REG/BULK"},
+                { field: "POSummary.Cantidad", title: "BALANCE QTY"},
+                { field: "FechaOrdenFinal", title: "EXPECTED SHIP DATE" },
+                { field: "FechaCancelada", title: "ORIGINAL CUST DUE DATE" },
+                { field: "POSummary.ItemDescripcion.Descripcion", title: "DESIGN NAME" },
+                { field: "POSummary.ItemDescripcion.ItemEstilo", title: "STYLE" },
+                { field: "", title: "MILL PO" },
+                { field: "POSummary.CatColores.DescripcionColor", title: "COLOR"},
+                { field: "POSummary.CatGenero.Genero", title: "GENDER" },
+                { field: "", title: "BLANKS RECEIVED" },
+                { field: "", title: "PARTIAL/COMPLETE BLANKS" },
+                { field: "", title: "ART RECEIVED" },
+                { field: "", title: "TRIM RECEIVED" },
+                { field: "", title: "PACK INST. RCVD"},
+                { field: "", title: "PRICE TICKET RECEIVED"},
+                { field: "", title: "UCC RECEIVED" },
+                { field: "CatComentarios.FechaComents", title: "COMMENTS UPDATE"},
+                { field: "CatComentarios.Comentario", title: "COMMENTS"},
+                { field: "CatComentarios.IdComentario", title: "ID COMMENT" }]
+        });
+    });
+
+    function customBoolEditor(container, options) {
+        var guid = kendo.guid();
+        $('<input class="k-checkbox" id="' + guid + '" type="checkbox" name="Discontinued" data-type="boolean" data-bind="checked:Discontinued">').appendTo(container);
+        $('<label class="k-checkbox-label" for="' + guid + '">&#8203;</label>').appendTo(container);
+    }
+</script>
+
+
+
+
+
+

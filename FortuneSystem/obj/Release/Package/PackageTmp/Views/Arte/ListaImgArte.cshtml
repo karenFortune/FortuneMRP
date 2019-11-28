@@ -1,0 +1,154 @@
+﻿@model IEnumerable<FortuneSystem.IMAGEN_ARTE>
+
+@{
+    ViewBag.Title = "Index";
+   
+}
+<style>
+    .edit_driver {
+    }
+
+        .edit_driver:hover {
+            color: white !important;
+            background: #3479bf !important;
+            border-radius: 15px;
+        }
+
+  .dot {
+        height: 50px;
+        width: 50px;
+        background-color: #de5a00;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .dot2 {
+        height: 50px;
+        width: 50px;
+        background-color: #de5a00;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .dot3 {
+        height: 50px;
+        width: 50px;
+        background-color: dimgray;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .dot4 {
+        height: 50px;
+        width: 50px;
+        background-color: #de5a00;
+        border-radius: 50%;
+        display: inline-block;
+    }
+       
+</style>
+<script>
+	  $(function () {
+        $('img').on('click', function () {
+            $('.enlargeImageModalSource').attr('src', $(this).attr('src'));
+            $('#enlargeImageModal').modal('show');
+        });
+    });
+</script>
+<h2></h2>
+    <table id="tablaArte" class="table table-striped">
+        <thead>
+			<tr>
+				<th>
+					@Html.DisplayNameFor(model => model.Estilo)
+				</th>
+				<th>
+					@Html.DisplayNameFor(model => model.PO)
+				</th>
+				<th>
+					@Html.DisplayNameFor(model => model.Color)
+				</th>
+				<th>
+					@Html.DisplayNameFor(model => model.Tienda)
+				</th>
+				<th>
+					@Html.DisplayNameFor(model => model.imgArte)
+				</th>
+				<th>
+					@Html.DisplayNameFor(model => model.StatusArte)
+				</th>
+
+				<th>ACTIONS</th>
+			</tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+			<tr>
+				<td>
+					@Html.DisplayFor(modelItem => item.Estilo)
+				</td>
+				<td>
+					@Html.DisplayFor(modelItem => item.PO)
+				</td>
+				<td>
+					@Html.DisplayFor(modelItem => item.Color)
+				</td>
+				<td>
+					@Html.DisplayFor(modelItem => item.Tienda)
+				</td>
+				<td>
+					<img width="70" height="70" src="@Url.Action("ConvertirImagenListaArteEstilo", "Arte", new {extensionArte = item.extensionArte, color = item.Color.TrimEnd(), estilo = item.Estilo.TrimEnd()})" />
+				</td>
+				@if (item.StatusArte == 1)
+				{
+
+					<td><span class="dot" title="APPROVED"></span> </td>
+				}
+				else if (item.StatusArte == 2)
+				{
+
+					<td><span class="dot2" title="REVIEWED"></span> </td>
+				}
+				else if (item.StatusArte == 3)
+				{
+					<td><span class="dot3" title="PENDING"></span> </td>
+				}
+				else if (item.StatusArte == 4)
+				{
+					<td><span class="dot4" title="INHOUSE"></span> </td>
+				}
+				<td>
+
+					<a href="@Url.Action("Create", "Arte",  new { id = item.CATARTE.IdSummary, idArte = item.IdImgArte, estilo= item.Estilo.TrimEnd(), color = item.Color.TrimEnd() }) " class="btn edit_driver edicion_driver" Title="Art"> <span class="glyphicon glyphicon-check " aria-hidden="true" style="padding: 0px !important;"></span></a>
+
+				</td>
+
+			</tr>
+            }
+        </tbody>
+    </table>
+	<div class="modal fade" id="enlargeImageModal" tabindex="-1" role="dialog" aria-labelledby="enlargeImageModal" aria-hidden="true">
+		<div class="modal-dialog modal-lg" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h2 class="modal-title" id="exampleModalLabel">ART</h2>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+				</div>
+				<div class="modal-body">
+					<img class="enlargeImageModalSource center" style="width: 50%;">
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+				</div>
+			</div>
+		</div>
+	</div>
+<script>
+    $('#tablaArte').dataTable({
+        responsive: true,
+        "ordering": false,
+        "lengthMenu": [[5, 10, 25, 50, -1], [5, 10, 25, 50, "All"]]
+
+    });
+</script>

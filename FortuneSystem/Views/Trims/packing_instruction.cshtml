@@ -1,0 +1,1491 @@
+﻿@{
+    ViewBag.Title = "TRIMS";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+</div>
+<link href="~/Content/base_m.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+<link href="~/Content/base_m.css" rel="stylesheet" />
+<script>
+    $(document).on("input", ".numeric", function () {
+        this.value = this.value.replace(/\D/g, '');
+    });
+    $(document).on("input", ".validacion", function () {
+        /*var c = this.selectionStart,
+            r = /[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ .()!@@/#%-]/,
+            v = $(this).val();
+        if (r.test(v)) {
+            $(this).val(v.replace(r, ''));
+            c--;
+        }
+        this.setSelectionRange(c, c);*/
+    });
+     $(function () {
+        $.datepicker.regional['es'] = {
+            closeText: 'Cerrar',
+            prevText: '<Ant',
+            nextText: 'Sig>',
+            currentText: 'Hoy',
+            monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+            monthNamesShort: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+                'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+            dayNames: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+            dayNamesShort: ['Dom', 'Lun', 'Mar', 'Mié', 'Juv', 'Vie', 'Sáb'],
+            dayNamesMin: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'],
+            weekHeader: 'Sm',
+            dateFormat: 'yy-mm-dd',
+            firstDay: 1,
+            isRTL: false,
+            showMonthAfterYear: false,
+            yearSuffix: ''
+        };
+        $.datepicker.setDefaults($.datepicker.regional['es']);
+        $('[data-toggle="tooltip"]').tooltip();
+        $('#caja_fecha_tc').datepicker();
+     });//DATEPICKER
+    $(function () { $('tabla_trim_cards_inicio tr').tooltip(); })
+    $(document).on("click", "a", function () { $("#loading").css('display', 'none'); });
+    $(document).ready(function () {        
+        obtener_listas();
+        buscar_trim_card();
+        $('.js-example-basic-single').select2();
+    });
+    function busqueda_trim_card_enter(event) {
+        if (event.keyCode == 13) {
+            buscar_trim_card();
+        }
+    }    
+    function buscar_trim_card() {
+        var busqueda;
+        if ($("#caja_busqueda_tc").val() == '') {
+            busqueda = "0";
+        } else {
+            busqueda = $("#caja_busqueda_tc").val();
+        }
+        $.ajax({
+            url: '/Trims/buscar_trim_card',
+            contentType: 'application/json',
+            data:"{'busqueda':'"+busqueda+"'}",
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                var html = '';
+                $.each(result, function (key, item) {
+                    var color;
+                    if (item.estado == 0) { color = '#a03a3a'; } else { color = '#4d834d'; }
+                    html += '<tr style="color:' + color+';" data-toggle="tooltip" data-placement="bottom" title="'+item.comentarios+'">';
+                    html += '<td>'+item.id_trim_card+'</td>';
+                    html += '<td>'+item.pedido+'</td>';
+                    html += '<td>'+item.customer+'</td>';
+                    html += '<td>'+item.usuario+'</td>';
+                    html += '<td>' + item.fecha + '</td>';
+                    if (item.entrega != '0') {
+                        html += '<td>'+item.entrega+'</td>';
+                        html += '<td>'+item.recibe+'</td>';
+                        html += '<td>' + item.fecha_entrega + '</td>';
+                    } else {
+                        html += '<td></td>';
+                        html += '<td></td>';
+                        html += '<td></td>';
+                    }
+                    html += '<td><button type="button" Title="Print"  class="btn edit_driver edicion_driver" onclick="imprimir_tc(' + item.id_trim_card + ')" style="padding: 0em 0.3em !important;  background:none; color:'+color+'; font-weight: bolder; " > <span class="glyphicon glyphicon-print" aria-hidden="true"  style="padding 0px !important;"></span> </button></td>';
+                    html += '<td><button type="button" Title="Add delivery"  class="btn edit_driver edicion_driver" onclick="agregar_entrega_tc(' + item.id_trim_card + ')" style="padding: 0em 0.3em !important;  background:none; color:'+color+'; font-weight: bolder; " > <span class="glyphicon glyphicon-glyphicon glyphicon-share-alt" aria-hidden="true"  style="padding 0px !important;"></span> </button></td>';
+                    html += '<td>';
+                    html += '<button type="button" Title="Edit"  class="btn edit_driver edicion_driver" onclick="editar_trim_card(' + item.id_trim_card + ')" style="padding: 0em 0.3em !important;  background:none; color:'+color+'; font-weight: bolder; " > <span class="glyphicon glyphicon-pencil" aria-hidden="true"  style="padding 0px !important;"></span> </button></td>';
+                    html += '<td><button type="button" Title="Delete"  class="btn edit_driver edicion_driver" onclick="eliminar_trim_card(' + item.id_trim_card + ')" style="padding: 0em 0.3em !important;  background:none; color:'+color+'; font-weight: bolder; " > <span class="glyphicon glyphicon-remove" aria-hidden="true"  style="padding 0px !important;"></span> </button>';
+                    html += '</td>';
+                    html += '</tr>';
+                });
+                $('.body_tabla_trim_cards_inicio').html(html);
+            }
+        });
+    }
+    var id_trim_card;
+
+    function eliminar_trim_card(id) {
+        $.ajax({
+            url: '/Trims/eliminar_trim_card',
+            data:"{'id':'"+id+"'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (jsonData) {
+                buscar_trim_card();
+            }
+        });
+    }
+    function agregar_entrega_tc(id) {
+        id_trim_card = id;
+        $('#caja_entrega_tc').val('');
+        $('#caja_recibe_tc').val('');
+        $('#caja_fecha_tc').val('');
+        $('#modal_nueva_entrega').modal('show');
+    }
+    function guardar_entrega_tc(event) {
+       if ($('#caja_entrega_tc').val()!='' && $('#caja_recibe_tc').val()!='' && $('#caja_fecha_tc').val()!='') {
+            $.ajax({
+            url: '/Trims/guardar_entrega_trim_card',
+            data:"{'id':'"+id_trim_card+"','entrega':'"+$('#caja_entrega_tc').val()+"','recibe':'"+$('#caja_recibe_tc').val()+"','fecha':'"+$('#caja_fecha_tc').val()+"'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (jsonData) {
+                buscar_trim_card();
+                $('#modal_nueva_entrega').modal('hide');
+            }
+        });
+        } else {
+            event.preventDefault();
+            alertify.alert('Error!', 'Check empty fields, please');
+            return false;
+        }
+    }
+    /*****************************************************************************************************************************************************************/
+    /*****************************************************************************************************************************************************************/
+    /*******A*G*R*E*G*A*R**I*M*A*G*E*N***********************************************************************************************************************************************************/
+    var clientes, generos, familias;
+    var total_clientes_new_img;
+    $(document).on("click", ".btn_new_image", function () {
+        total_clientes_new_img = 0;
+        //$("#load_trim_card").css('display', 'inline');
+        //obtener_listas();
+        llenar_familias_nueva_imagen();
+        $(".body_tabla_agregar_imagenes").html('');
+        $("#caja_image_new").val('');
+        new_row_new_img();
+
+    });
+    function llenar_familias_nueva_imagen() {
+        var html = '<option  value="0">Select</option>';
+        $.each(familias, function (key, item) {
+            html += '<option  value="' + item.id_family_trim + '">' + item.family_trim + '</option>';
+        });
+        $(".fam_new_img").html(html);
+    }
+    function obtener_listas() {
+        $.ajax({
+            url: '/Trims/buscar_clientes_generos_familias',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (jsonData) {
+                clientes = jsonData.Data.clientes;
+                generos = jsonData.Data.generos;
+                familias = jsonData.Data.familias;
+            }
+        });
+    }
+    function new_row_new_img() {
+        var html = '';
+        html += '<tr>';
+        html += '<td>';
+        html += '<select class="form-control js-example-basic-single customer_new" style=" " id="">';
+        $.each(clientes, function (key, item) {
+            html += '<option  value="' + item.id_customer + '">' + item.customer + '</option>';
+        });
+        html += '</select>';
+        html += '</td>';
+        html += '<td>';
+        html += '<select class="form-control js-example-basic-single genero_new" style="  " id="">';
+        $.each(generos, function (key, item) {
+            html += '<option  value="' + item.id_genero + '">' + item.genero + '</option>';
+        });
+        html += '</select>';
+        html += '</td>';
+        html += '<td><button type="button" class="btn btn-light delRowNewImg"><b>-</b></button></td>';
+        html += '</tr>';
+        $(".body_tabla_agregar_imagenes").append(html);
+        total_clientes_new_img++;
+    }
+    $(document).on("click", ".delRowNewImg", function () {
+        if (total_clientes_new_img > 1) {
+            total_clientes_new_img--;
+            $(this).closest("tr").remove();
+        }
+    });
+    function guardar_img() {
+        //$("#load_trim").css('display', 'inline');
+        /*var archivo = $("#caja_image_new").val();
+        if (archivo.indexOf("png") >= 0 || archivo.indexOf("jpg") >= 0 || archivo.indexOf("jpeg") >= 0) {
+            if (window.FormData !== undefined) {
+                var fileUpload = $("#caja_image_new").get(0);
+                var files = fileUpload.files;
+                // Create FormData object
+                var fileData = new FormData();
+                // Looping over all files and add it to FormData object
+                for (var i = 0; i < files.length; i++) { fileData.append(files[i].name, files[i]); }
+                // Adding one more key to FormData object
+                fileData.append('username', 'Manas');
+                $.ajax({
+                    url: '/Trims/upload_imagen_trim',
+                    type: "POST",
+                    contentType: false, // Not to set any content header
+                    processData: false, // Not to process data
+                    data: fileData,
+                    success: function (jsonData) {
+                        guardar_datos_nueva_imagen();
+                    },
+                    error: function (err) { alert(err.statusText); }
+                });
+            } else {
+                //$("#load_trim").css('display', 'none');
+                alert("FormData is not supported.");
+            }
+        }******************************************************************/
+
+        var formdata = new FormData(); //FormData object
+        var fileInput = document.getElementById('caja_image_new');
+        //Iterating through each files selected in fileInput
+        for (i = 0; i < fileInput.files.length; i++) {
+            //Appending each file to FormData object
+            formdata.append(fileInput.files[i].name, fileInput.files[i]);
+        }
+        //Creating an XMLHttpRequest and sending
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/Trims/upload_imagen_trim');
+        xhr.send(formdata);
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState == 4 && xhr.status == 200) {
+                //alert(xhr.responseText);
+            }
+        }
+        setTimeout(function(){  guardar_datos_nueva_imagen(); }, 2000);
+    }
+    var customer_ni, genero_ni, familia_ni;
+    function guardar_datos_nueva_imagen() {
+        customer_ni = ''; genero_ni = ''; familia_ni = '';
+        familia_ni = $('#caja_familia_new').val();
+        $('#tabla_agregar_imagenes tbody tr').each(function () {
+            customer_ni += '*' + $(this).find('.customer_new').val();
+            genero_ni += '*' + $(this).find('.genero_new').val();
+            //alert('customer: ' + $(this).find('.customer_new').val()); //alert('genero: ' + $(this).find('.genero_new').val());
+        });
+        $.ajax({
+            url: '/Trims/guardar_nueva_imagen',
+            contentType: 'application/json',
+            data: "{'familia':'" + familia_ni + "','cliente':'" + customer_ni + "','genero':'" + genero_ni + "'}",
+            dataType: 'json',
+            type: 'post',
+            success: function (jsonData) {
+                $("#modal_new_image").modal('hide');
+                alertify.success('Succes!');
+                alertify.set('notifier', 'position', 'top-right');
+            }
+        });
+    }
+    /*******A*G*R*E*G*A*R**I*M*A*G*E*N***********************************************************************************************************************************************************/
+    /******E*D*I*T*A*R*****I*M*A*G*E*N***********************************************************************************************************************************************************/
+    $(document).on("click", ".btn_edit_image", function () {
+        llenar_familias_edicion_imagen();
+        $('#div_edicion').css('visibility', 'hidden');
+        $('#imagenes_edicion').html('');
+        $('#caja_image_editar').val('');
+    });
+    function llenar_familias_edicion_imagen() {
+        var html = '<option  value="0">Select</option>';
+        $.each(familias, function (key, item) {
+            html += '<option  value="' + item.id_family_trim + '">' + item.family_trim + '</option>';
+        });
+        $(".fam_edit_img").html(html);
+    }
+    $(document).on("change", "#caja_familia_edit", function () {
+        $.ajax({
+            url: '/Trims/buscar_imagenes_familia',
+            data: "{'familia':'" + $('#caja_familia_edit').val() + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                var html = '';
+                $.each(result, function (key, item) {
+                    //var x = (item.imagen).split('.');
+                    html += '<div class="option">' +
+                        '<input type="radio" class="imagen_edicion" name="imagenes_select_edit" value="' + item.id_imagen + '" id="' + item.id_imagen + '" />' +
+                        '<label for="' + item.id_imagen + '" style="padding-left:1.5em;">' +
+                        '<img id="trim_' + item.id_imagen + '" style="height:7em;width:auto;" alt="No image" /> ' +
+                        '</label></div>';
+                });  
+                $("#imagenes_edicion").html(html);
+                $.each(result, function (key, item) {
+                    //var x = (item.imagen).split('.');
+                    obtenerImagenArte(item.id_imagen);
+                });
+                
+            }
+        });
+    });
+    function obtenerImagenArte(id) { $('#trim_' + id).attr('src', '/Trims/ConvertirImagen?id=' + id); }
+    var total_clientes_edit_img;
+    $(document).on("click", ".imagen_edicion", function () {
+        var id = $(this).attr('id');
+        $('#id_trim_edicion').val($('input[name="imagenes_select_edit"]:checked').val());
+        $.ajax({
+            url: '/Trims/buscar_genero_cliente_trim',
+            data: "{'trim':'" + $('input[name="imagenes_select_edit"]:checked').val() + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                var html = '';
+                total_clientes_edit_img = 0;
+                $.each(result, function (key, item) {
+                    html += '<tr>';
+                    html += '<td>';
+                    html += '<select class="form-control js-example-basic-single customer_edit" style=" " id="">';
+                    $.each(clientes, function (key, i) {
+                        if (item.id_customer == i.id_customer) {
+                            html += '<option  value="' + i.id_customer + '" selected>' + i.customer + '</option>';
+                        } else {
+                            html += '<option  value="' + i.id_customer + '">' + i.customer + '</option>';
+                        }                        
+                    });
+                    html += '</select>';
+                    html += '</td>';
+                    html += '<td>';
+                    html += '<select class="form-control js-example-basic-single genero_edit" style="  " id="">';
+                    $.each(generos, function (key, i) {
+                        if (item.id_genero == i.id_genero) {
+                            html += '<option  value="' + i.id_genero + '" selected>' + i.genero + '</option>';
+                        } else {
+                            html += '<option  value="' + i.id_genero + '">' + i.genero + '</option>';
+                        }                        
+                    });
+                    html += '</select>';
+                    html += '</td>';
+                    html += '<td><button type="button" class="btn btn-light delRowEdImg"><b>-</b></button></td>';
+                    html += '</tr>';
+                    total_clientes_edit_img++;
+                });
+                $(".body_tabla_editar_imagenes").html(html);
+                if (total_clientes_edit_img != 0) {
+                    $('#div_edicion').css('visibility', 'visible');
+                } else {
+                    $('#div_edicion').css('visibility', 'hidden');
+                }
+            }
+        });
+    });
+    $(document).on("click", ".delRowEdImg", function () {
+        if (total_clientes_edit_img > 1) {
+            total_clientes_edit_img--;
+            $(this).closest("tr").remove();
+        }
+    });
+    $(document).on("click", "img", function () {
+       $('.enlargeImageModalSource').attr('src', $(this).attr('src'));
+       $('#enlargeImageModal').modal('show');
+    });
+    function new_row_editar_img() {
+        var html = '';
+        html += '<tr>';
+        html += '<td>';
+        html += '<select class="form-control js-example-basic-single customer_edit" style=" " id="">';
+        $.each(clientes, function (key, item) {
+            html += '<option  value="' + item.id_customer + '">' + item.customer + '</option>';
+        });
+        html += '</select>';
+        html += '</td>';
+        html += '<td>';
+        html += '<select class="form-control js-example-basic-single genero_edit" style="  " id="">';
+        $.each(generos, function (key, item) {
+            html += '<option  value="' + item.id_genero + '">' + item.genero + '</option>';
+        });
+        html += '</select>';
+        html += '</td>';
+        html += '<td><button type="button" class="btn btn-light delRowEdImg"><b>-</b></button></td>';
+        html += '</tr>';
+        $(".body_tabla_editar_imagenes").append(html);
+        total_clientes_edit_img++;
+    }
+    var customer_ed, genero_ed;
+    function guardar_editar_img(event) {
+        customer_ed = ''; genero_ed = '';       
+        var cambio = '';
+        if ($('#caja_image_editar').val() != '') {
+            cambiar_imagen();
+            cambio = 1;
+        } else {
+            cambio = 0;
+        }
+        $('#tabla_editar_imagenes tbody tr').each(function () {
+            customer_ed += '*' + $(this).find('.customer_edit').val();
+            genero_ed += '*' + $(this).find('.genero_edit').val();
+            //alert('customer: ' + $(this).find('.customer_new').val()); //alert('genero: ' + $(this).find('.genero_new').val());
+        });
+        var imagen = $('#caja_image_editar').val();
+        imagen = String(imagen);
+        imagen_splitted = imagen.split('\\');        
+        $.ajax({
+            url: '/Trims/guardar_edicion_imagen',
+            contentType: 'application/json',
+            data: "{'trim':'" + $('#id_trim_edicion').val() + "','cliente':'" + customer_ed + "','genero':'" + genero_ed + "','cambio':'" + cambio + "','imagen':'" + imagen_splitted[2]+"'}",
+            dataType: 'json',
+            type: 'post',
+            success: function (jsonData) {
+                $("#modal_edit_image").modal('hide');
+                alertify.success('Succes!');
+                alertify.set('notifier', 'position', 'top-right');
+                location.reload(true);
+            }
+        });  
+    }    
+    function cambiar_imagen() {
+        var archivo = $("#caja_image_editar").val();
+        if (archivo.indexOf("png") >= 0 || archivo.indexOf("jpg") >= 0 || archivo.indexOf("jpeg") >= 0) {
+            if (window.FormData !== undefined) {
+                var fileUpload = $("#caja_image_editar").get(0);
+                var files = fileUpload.files;
+                // Create FormData object
+                var fileData = new FormData();
+                // Looping over all files and add it to FormData object
+                for (var i = 0; i < files.length; i++) { fileData.append(files[i].name, files[i]); }
+                // Adding one more key to FormData object
+                fileData.append('username', 'Manas');
+                $.ajax({
+                    url: '/Trims/upload_imagen_trim',
+                    type: "POST",
+                    contentType: false, // Not to set any content header
+                    processData: false, // Not to process data
+                    data: fileData,
+                    success: function (jsonData) {
+                    },
+                    error: function (err) { alert(err.statusText); }
+                });
+            } else {
+                alert("FormData is not supported.");
+            }
+        }
+    }
+    /******E*D*I*T*A*R*****I*M*A*G*E*N***********************************************************************************************************************************************************/
+    /******C*R*E*A*R**N*U*E*V*O**T*R*I*M**C*A*R*D************************************************************************************************************************************************/
+    $(document).on("click", ".btn_new_trim_card", function () {
+        $(".rows_tabla_familias_tc").html('');  
+        //$("#caja_fold_size_tc").html('');  
+        $(".clientes_crear_tc").html('');  
+        $("#div_tabla_familias_tc").css('visibility', 'hidden');  
+        $("#div_tabla_empaque_tc").css('visibility', 'hidden');  
+        $(".rows_tabla_empaque_ratios_tc").html('');
+        llenar_po_trim_card();
+    });
+    function llenar_po_trim_card() {
+        $.ajax({
+            url: '/Trims/buscar_pedidos',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                var html = '<option  value="0">Select</option>';
+                $.each(result, function (key, item) {
+                    html += '<option  value="' + item.id_pedido + '">' + item.pedido + '</option>';
+                });
+                $(".pedidos_crear_tc").html(html);
+                $("#load_trim").css('display', 'none');                
+            }
+        });
+    }
+    var generos_trim_card; var familias_imagenes;
+    $(document).on("change", "#caja_pedido_crear_tc", function () {
+        $("#load_trim_card").css('display', 'inline');
+        $.ajax({
+            url: '/Trims/obtener_datos_pedido_tc',
+            contentType: 'application/json',
+            data: "{'pedido':'" + $("#caja_pedido_crear_tc").val() + "'}",
+            dataType: 'json',
+            type: 'post',
+            success: function (jsonData) { 
+                //var pedido = jsonData.Data.pedido;
+                var estilos = jsonData.Data.estilos;
+                var assorts = jsonData.Data.assorts;
+                familias_imagenes = jsonData.Data.familias_imagenes;
+                var cliente = jsonData.Data.cliente;
+                var generos = jsonData.Data.generos;                    
+                var cajas = jsonData.Data.cajas;                    
+                //CLIENTE
+                $(".clientes_crear_tc").html('<option  value="' + cliente.id_customer + '">' + cliente.customer + '</option>');
+                //GENEROS
+                generos_trim_card = '';
+                $.each(generos, function (key, item) {
+                    generos_trim_card += '*' + item;
+                });
+                //RATIO Y TIPO DE EMPAQUE
+                html = '';
+                var c = 1;
+                $.each(estilos, function (key, item) {  //ESTILOS PPK O BP EN LISTA ESTILOS
+                    $.each(item.lista_empaque, function (key, e) {
+                       if (e.tipo_empaque == 1) {
+                           html += '<tr>';
+                           html += '<td><input id="check_'+c+'" type="radio" class="totales_radio" name="tipo_empaque_cb" value="' + (c-1)+ '" checked ></td>';
+                           html += '<td>BP</td>';
+                           html += '<td>';
+                           $.each(e.lista_ratio, function (key, tp) {
+                               html += tp.talla + ': ' + tp.piezas +' ';
+                           });
+                           html += '</td>';
+                           html += '</tr>';    
+                        } else {
+                           html += '<tr>';
+                           html += '<td><input id="check_' + c + '"  type="radio" class="totales_radio" name="tipo_empaque_cb" value="' + (c - 1) + '" checked ></td>';
+                           html += '<td>PPK</td>';
+                           html += '<td>';
+                           $.each(e.lista_ratio, function (key, tp) {
+                               html += tp.talla + ': ' + tp.ratio + ' ';
+                           });
+                           html += '</td>';
+                           html += '</tr>';                           
+                        } 
+                        c++;
+                    });
+                });  
+                $.each(assorts, function (key, a) {
+                    html += '<tr>';
+                    html += '<td><input id="check_' + c + '"  type="radio" class="totales_radio" name="tipo_empaque_cb" value="' + (c - 1)+'" checked ></td>';
+                    html += '<td>Assort: '+a.nombre+'</td>';
+                    html += '<td>'+a.cartones;
+                    /*$.each(a.lista_estilos, function (key, e) {
+                        
+                        $.each(e.lista_ratio, function (key, r) {
+                            html += r.talla + ': ' + r.ratio + ' ';
+                        });
+                        html += '';
+                    });*/
+                    html += '</td>';
+                    html += '</tr>';
+                    c++;  
+                });
+                $(".rows_tabla_empaque_ratios_tc").html(html);
+                //FAMILIAS AHORA SI
+                //<th></th><th>Family</th><th>Image</th><th>Notes</th><th>Special</th>
+                html = '';
+                $.each(familias_imagenes, function (key, item) {
+                    html += '<tr><td>' + item.id_family_trim + '</td><td>' + item.family_trim + '</td>';
+                    var boxes = '';
+                    $.each(cajas, function (key, i) { boxes += " " + i.item; });
+                    if (item.family_trim == "BOXES") {
+                        html += '<td><input   maxlength="200" class="validacion form-control  " value="' + boxes + '" id="caja_item_' + item.id_family_trim + '"  /></td>';
+                    } else {
+                        html += '<td><input   maxlength="100" class="validacion form-control  " value="' + item.item + '" id="caja_item_' + item.id_family_trim + '"  /></td>';
+                    }                   
+
+                    html += '<td><select class="form-control js-example-basic-single select_imagen" style="width:100%;  " id="caja_imagen_' + item.id_family_trim + '">';
+                    $.each(item.lista_imagenes, function (key, i) {
+                        html += '<option  value="' + i.id_imagen + '">' + i.imagen + '</option>';
+                    }); 
+                    html += '</select>';
+                    html += '<img id="img_' + item.id_family_trim + '" style="height:auto;width:auto; max-height:7em;max-width:15em;" alt="No image" />';
+                    html += '</td>';
+                    html += '<td><textarea id="area_' + item.id_family_trim + '" rows="4" cols="30"></textarea></td>';
+                    if (item.id_family_trim == 32) {
+                        html += '<td>';
+                        html += '<input type="radio" class="especiales_' + item.id_family_trim + '" name="especial_' + item.id_family_trim + '" value="1" checked >&nbsp;CNL/Neck Label<br/>';
+                        html += '<input type="radio" class="especiales_' + item.id_family_trim + '" name="especial_' + item.id_family_trim + '" value="2" checked >&nbsp;Sleeve<br/>';
+                        html += '<input type="radio" class="especiales_' + item.id_family_trim + '" name="especial_' + item.id_family_trim + '" value="3" checked >&nbsp;Arm Hole/Armpit<br/>';
+                        html += '<input type="radio" class="especiales_' + item.id_family_trim + '" name="especial_' + item.id_family_trim + '" value="4" checked >&nbsp;Shoulder<br/>';
+                        html += '</td>';
+                    } else {
+                        html += '<td>';
+                        html += '<input type="radio" class="especiales_' + item.id_family_trim + '" name="especial_' + item.id_family_trim + '" value="5" checked >&nbsp;N/A<br/>';
+                        html += '<input type="radio" class="especiales_' + item.id_family_trim + '" name="especial_' + item.id_family_trim + '" value="6" checked >&nbsp;Check<br/>';
+                        html += '<input type="radio" class="especiales_' + item.id_family_trim + '" name="especial_' + item.id_family_trim + '" value="7" checked >&nbsp;ECOM<br/>';
+                        html += '</td>';
+                    }
+                    html += '</tr>';
+                });
+                $(".rows_tabla_familias_tc").html(html);                
+                $("#load_trim_card").css('display', 'none');
+                $.each(familias_imagenes, function (key, item) {
+                    id_imagen = $('#caja_imagen_' + item.id_family_trim).val();
+                    if (id_imagen != null) {
+                        obtenerImagenTablaFamilia(item.id_family_trim);
+                    }
+                });
+                $("#div_tabla_familias_tc").css('visibility', 'visible');
+                $("#div_tabla_empaque_tc").css('visibility', 'visible');  
+            }
+        });        
+    });
+    var id_imagen;
+    function obtenerImagenTablaFamilia(id) {
+        $('#img_' + id).attr('src', '/Trims/ConvertirImagen?id=' + id_imagen);
+    }
+    $(document).on("change", ".select_imagen", function () {       
+        var id_temp = $(this).attr('id');
+        var cadena = id_temp.split('_');
+        id_imagen = $(this).val();
+        obtenerImagenTablaFamilia(cadena[2]);
+    });
+    var pedido, customer, fold_size, tipo_empaque, ratio;
+    var familia, imagen, notas, especial,id,item;
+    function guardar_tc(event) {
+        $("#load_trim").css('display', 'inline');
+        pedido, customer, fold_size, tipo_empaque = '', ratio = '';
+        familia = ''; imagen = ''; notas = ''; especial = ''; item = '';
+        var estado, comentarios = 'N/A';
+        //tipo_empaque
+        pedido = $("#caja_pedido_crear_tc").val();
+        customer = $("#caja_cliente_tc").val();
+        //fold_size = $("#caja_fold_size_tc").val();
+        var error = 0;
+        var row_empaque = $('input[name="tipo_empaque_cb"]:checked').val();
+        row_empaque++;
+        if ($('#tabla_empaque_ratios_tc tr:eq('+row_empaque+') td:eq(1) ').html() == 'PPK') { tipo_empaque = '2'; }
+        if ($('#tabla_empaque_ratios_tc tr:eq(' + row_empaque + ') td:eq(1) ').html() == 'BP') { tipo_empaque = '1'; }
+        if ($('#tabla_empaque_ratios_tc tr:eq(' + row_empaque + ') td:eq(1) ').html() == 'Assort') { tipo_empaque = '3'; }
+        ratio = $('#tabla_empaque_ratios_tc tr:eq(' + row_empaque + ') td:eq(2) ').html(); 
+        if ($("#caja_comentarios_tc").val() != '') { comentarios = $("#caja_comentarios_tc").val(); }
+        estado=$("#caja_estado_tc").val();
+        $('#tabla_familias_tc tbody tr').each(function () {
+            id = $(this).find('td:eq(0) ').html();
+            familia += '*' + $(this).find('td:eq(0) ').html();
+            if ($('#caja_imagen_' + id).val() == null) {
+                imagen += '*0';
+            } else {
+                imagen += '*' + $('#caja_imagen_' + id).val();
+            }   
+            if ($('#area_' + id).val() == '') {
+                notas += '*n/a';
+            } else {
+                notas += '*' + $('#area_' + id).val();
+            }              
+            especial += '*' + $('input[name="especial_' + id + '"]:checked').val();
+            if ($('#caja_item_' + id).val() == null) {
+                error++;
+                $('#caja_item_' + id).css('border', '2px solid #e03f3f');
+            } else {
+                item += '*' + $('#caja_item_' + id).val();
+            }  
+        });
+        if (error == 0) {
+            $.ajax({
+                url: '/Trims/guardar_tc',
+                contentType: 'application/json',
+                data: "{'pedido':'" + pedido + "','customer':'" + customer + "','tipo_empaque':'" + tipo_empaque + "','ratio':'" + ratio + "','familia':'" + familia + "','imagen':'" + imagen + "','nota':'" + notas + "','especial':'" + especial + "','generos':'" + generos_trim_card + "','item':'"+item+"','comentarios':'"+comentarios+"','estado':'"+estado+"'}",
+                dataType: 'json',
+                type: 'post',
+                success: function (result) {
+                    $("#modal_nuevo_trim_card").modal("hide");
+                    $("#caja_busqueda_tc").val('');
+                    buscar_trim_card();    
+                    alertify.success('Succes!');
+                    alertify.set('notifier', 'position', 'top-right');
+                    //cargar tabla de trim cards al inicio
+                    $("#load_trim").css('display', 'none');
+                    //IMPRIMIR TRIM CARD
+                }
+            });
+        } else {
+            alertify.alert('Error!', 'Check empty fields, please');
+        }
+    }
+    function imprimir_tc(id) {
+        $.ajax({
+            url: '/Trims/session_tc',
+            data: "{'id':'" + id + "'}",
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                ver_pdf_tc();
+            }
+        });
+    }
+    function ver_pdf_tc() {
+        var boton = document.getElementById('link_tc');
+        boton.click();
+    }
+    /******C*R*E*A*R**N*U*E*V*O**T*R*I*M**C*A*R*D************************************************************************************************************************************************/
+    /******E*D*I*T*A*R**T*R*I*M**C*A*R*D*********************************************************************************************************************************************************/
+    //modal_editar_trim_card
+    function llenar_po_trim_card_editar() {
+        $.ajax({
+            url: '/Trims/buscar_pedidos',
+            contentType: 'application/json',
+            dataType: 'json',
+            type: 'post',
+            success: function (result) {
+                var html = '<option  value="0">Select</option>';
+                $.each(result, function (key, item) {
+                    html += '<option  value="' + item.id_pedido + '">' + item.pedido + '</option>';
+                });
+                $(".pedidos_editar_tc").html(html);
+                $("#load_trim").css('display', 'none');
+            }
+        });
+    }
+    
+    function editar_trim_card(id) {
+        $("#load_trim_card").css('display', 'inline');
+             
+        $.ajax({
+            url: '/Trims/obtener_datos_edicion_trim_card',
+            contentType: 'application/json',
+            data: "{'trim_card':'" + id + "'}",
+            dataType: 'json',
+            type: 'post',
+            success: function (jsonData) {
+                //var pedido = jsonData.Data.pedido;
+                var estilos = jsonData.Data.estilos;
+                var assorts = jsonData.Data.assorts;
+                familias_imagenes = jsonData.Data.familias_imagenes;
+                var cliente = jsonData.Data.cliente;                
+                var trim_card = jsonData.Data.trim_card;
+                var cajas = jsonData.Data.cajas;
+                //PEDIDO
+                
+                //FOLD SIZE
+                $.each(trim_card, function (key, tc) {
+                    $("#id_trim_card_edicion").val(tc.id_trim_card);                   
+                    $(".pedidos_editar_tc").html('<option  value="' + tc.id_pedido + '">' + tc.pedido + '</option>');
+                    $("#caja_estado_tc_editar").val(tc.estado);
+                    $("#caja_comentarios_tc_editar").val(tc.comentarios);
+                });                
+                //CLIENTE
+                $(".clientes_editar_tc").html('<option  value="' + cliente.id_customer + '">' + cliente.customer + '</option>');
+                //RATIO Y TIPO DE EMPAQUE
+                html = '';
+                var c = 1;
+                $.each(estilos, function (key, item) {  //ESTILOS PPK O BP EN LISTA ESTILOS
+                    $.each(item.lista_empaque, function (key, e) {
+                        if (e.tipo_empaque == 1) {
+                            html += '<tr>';
+                            html += '<td><input id="check_ed_' + c + '" type="radio" class="totales_radio_ed" name="tipo_empaque_cb_ed" value="' + (c - 1) + '"  ></td>';
+                            html += '<td>BP</td>';
+                            html += '<td>';
+                            $.each(e.lista_ratio, function (key, tp) {
+                                html += tp.talla + ': ' + tp.piezas + ' ';
+                            });
+                            html += '</td>';
+                            html += '</tr>';
+                        } else {
+                            html += '<tr>';
+                            html += '<td><input id="check_ed_' + c + '"  type="radio" class="totales_radio_ed" name="tipo_empaque_cb_ed" value="' + (c - 1) + '"  ></td>';
+                            html += '<td>PPK</td>';
+                            html += '<td>';
+                            $.each(e.lista_ratio, function (key, tp) {
+                                html += tp.talla + ': ' + tp.ratio + ' ';
+                            });
+                            html += '</td>';
+                            html += '</tr>';
+                            
+                        }
+                        c++;
+                    });
+                });
+                $.each(assorts, function (key, a) {
+                    html += '<tr>';
+                    html += '<td><input id="check_ed_' + c + '"  type="radio" class="totales_radio_ed" name="tipo_empaque_cb_ed" value="' + (c - 1) + '"  ></td>';
+                    html += '<td>Assort: '+a.nombre+'</td>';
+                    html += '<td>'+a.cartones;
+                    /*$.each(a.lista_estilos, function (key, e) {
+                        $.each(e.lista_ratio, function (key, r) {
+                            html += r.talla + ': ' + r.ratio + ' ';
+                        });
+                        html += '<br/>';
+                    });*/
+                    html += '</td>';
+                    html += '</tr>';
+                    c++;
+                });
+                $(".rows_tabla_empaque_ratios_tc_editar").html(html);
+                var ratio_trim_card, type_packing_tc;
+                $.each(trim_card, function (key, tc) {
+                    ratio_trim_card = tc.ratio;
+                    if (tc.tipo_empaque == 1) { type_packing_tc = "BP"; }
+                    else {
+                        if (tc.tipo_empaque == 2) { type_packing_tc = "PPK"; }
+                        else { type_packing_tc = "Assort"; }
+                    }
+                });
+                for (var i = 1; i < c; i++) {
+                    var empaque_tabla = $('#tabla_empaque_ratios_tc_editar tr:eq(' + i + ') td:eq(2) ').html();
+                    var tipo_empaque_tabla = $('#tabla_empaque_ratios_tc_editar tr:eq(' + i + ') td:eq(1) ').html();
+                    if (empaque_tabla == ratio_trim_card && tipo_empaque_tabla == type_packing_tc) {
+                        $("#check_ed_"+i).prop("checked", true);
+                    }
+                }
+                //FAMILIAS AHORA SI
+                //<th></th><th>Family</th><th>Image</th><th>Notes</th><th>Special</th>
+                html = '';
+                $.each(familias_imagenes, function (key, item) {
+                    html += '<tr><td>' + item.id_family_trim + '</td><td>' + item.family_trim + '</td>';
+                    var boxes = '';
+                    $.each(cajas, function (key, i) { boxes += " " + i.item; });
+                    if (item.family_trim == "BOXES") {
+                        html += '<td><input   maxlength="200" class="validacion form-control  " value="' + boxes + '" id="caja_item_ed_' + item.id_family_trim + '"  /></td>';
+                    } else {
+                        html += '<td><input   maxlength="100" class="validacion form-control  " value="' + item.item + '" id="caja_item_ed_' + item.id_family_trim + '"  /></td>';
+                    }  
+                   // html += '<td><input   maxlength="100" class="validacion form-control  " value="' + item.item + '" id="caja_item_ed_' + item.id_family_trim + '"  /></td>';
+
+                    html += '<td><select class="form-control js-example-basic-single select_imagen_edicion" style="width:100%;  " id="caja_imagen_ed_' + item.id_family_trim + '">';
+                    $.each(item.lista_imagenes, function (key, i) {
+                        html += '<option  value="' + i.id_imagen + '">' + i.imagen + '</option>';
+                    });
+                    html += '</select>';
+                    html += '<img id="img_ed_' + item.id_family_trim + '" style="height:auto;width:auto; max-height:7em;max-width:15em;" alt="No image" />';
+                    html += '</td>';
+                    html += '<td><textarea id="area_ed_' + item.id_family_trim + '" rows="4" cols="30"></textarea></td>';
+                    if (item.id_family_trim == 32) {
+                        html += '<td>';
+                        html += '<input type="radio" class="especiales_ed_' + item.id_family_trim +'_1" name="especial_ed_' + item.id_family_trim + '" value="1"  >&nbsp;CNL/Neck Label<br/>';
+                        html += '<input type="radio" class="especiales_ed_' + item.id_family_trim +'_2" name="especial_ed_' + item.id_family_trim + '" value="2"  >&nbsp;Sleeve<br/>';
+                        html += '<input type="radio" class="especiales_ed_' + item.id_family_trim +'_3" name="especial_ed_' + item.id_family_trim + '" value="3"  >&nbsp;Arm Hole/Armpit<br/>';
+                        html += '<input type="radio" class="especiales_ed_' + item.id_family_trim +'_4" name="especial_ed_' + item.id_family_trim + '" value="4"  >&nbsp;Shoulder<br/>';
+                        html += '</td>';
+                    } else {
+                        html += '<td>';
+                        html += '<input type="radio" class="especiales_ed_' + item.id_family_trim +'_5" name="especial_ed_' + item.id_family_trim + '" value="5"  >&nbsp;N/A<br/>';
+                        html += '<input type="radio" class="especiales_ed_' + item.id_family_trim +'_6" name="especial_ed_' + item.id_family_trim + '" value="6"  >&nbsp;Check<br/>';
+                        html += '<input type="radio" class="especiales_ed_' + item.id_family_trim +'_7" name="especial_ed_' + item.id_family_trim + '" value="7"  >&nbsp;ECOM<br/>';
+                        html += '</td>';
+                    }
+                    html += '</tr>';
+                });
+                $(".rows_tabla_familias_tc_editar").html(html);
+                $.each(trim_card, function (key, tc) {
+                    $.each(tc.lista_familias, function (key, i) {
+                        if (i.id_imagen != 0) {
+                            $('#caja_imagen_ed_' + i.id_family_trim).val(i.id_imagen);
+                            $('#img_ed_' + i.id_family_trim).attr('src', '/Trims/ConvertirImagen?id=' + i.id_imagen);
+                        }
+                        $('#area_ed_' + i.id_family_trim).val(i.notas);
+                        $(".especiales_ed_" + i.id_family_trim +"_"+ i.id_especial).attr('checked', true);
+                    }); 
+                });
+                $("#modal_editar_trim_card").modal("show");
+               
+                $("#div_tabla_familias_tc_editar").css('visibility', 'visible');
+                $("#div_tabla_empaque_tc_editar").css('visibility', 'visible');
+                $("#load_trim_card").css('display', 'none');
+            }
+        });        
+    }
+    $(document).on("change", ".select_imagen_edicion", function () {
+        var id_temp = $(this).attr('id');
+        var cadena = id_temp.split('_');
+        $('#img_ed_' + cadena[3]).attr('src', '/Trims/ConvertirImagen?id=' + $("#"+id_temp).val());
+    });
+    function guardar_edicion_tc(event) {
+        $("#load_trim").css('display', 'inline');
+        pedido, customer, fold_size, tipo_empaque = '', ratio = '';
+        familia = ''; imagen = ''; notas = ''; especial = ''; item = '';
+        var comentarios = 'N/A', estado;
+        //tipo_empaque
+        //fold_size = $("#caja_fold_size_tc_editar").val();
+        var error = 0;
+        var row_empaque = $('input[name="tipo_empaque_cb_ed"]:checked').val();
+        row_empaque++;
+        if ($('#tabla_empaque_ratios_tc_editar tr:eq(' + row_empaque + ') td:eq(1) ').html() == 'PPK') { tipo_empaque = '2'; }
+        if ($('#tabla_empaque_ratios_tc_editar tr:eq(' + row_empaque + ') td:eq(1) ').html() == 'BP') { tipo_empaque = '1'; }
+        if ($('#tabla_empaque_ratios_tc_editar tr:eq(' + row_empaque + ') td:eq(1) ').html() == 'Assort') { tipo_empaque = '3'; }
+        ratio = $('#tabla_empaque_ratios_tc_editar tr:eq(' + row_empaque + ') td:eq(2) ').html();
+        estado=$("#caja_estado_tc_editar").val();
+        if ($("#caja_comentarios_tc_editar").val()!='') { comentarios = $("#caja_comentarios_tc_editar").val(); }
+        $('#tabla_familias_tc_editar tbody tr').each(function () {
+            id = $(this).find('td:eq(0) ').html();
+            familia += '*' + $(this).find('td:eq(0) ').html();
+            if ($('#caja_imagen_ed_' + id).val() == null) {
+                imagen += '*0';
+            } else {
+                imagen += '*' + $('#caja_imagen_ed_' + id).val();
+            }
+            if ($('#area_ed_' + id).val() == '') {
+                notas += '*n/a';
+            } else {
+                notas += '*' + $('#area_ed_' + id).val();
+            }
+            especial += '*' + $('input[name="especial_ed_' + id + '"]:checked').val();
+            if ($('#caja_item_ed_' + id).val() == null) {
+                error++;
+                $('#caja_item_ed_' + id).css('border', '2px solid #e03f3f');
+            } else {
+                item += '*' + $('#caja_item_ed_' + id).val();
+            }
+            
+        }); debugger
+         if(error == 0){
+            $.ajax({
+                url: '/Trims/guardar_edicion_tc',
+                contentType: 'application/json',
+                data: "{'id_trim_card':'" + $("#id_trim_card_edicion").val() + "','tipo_empaque':'" + tipo_empaque + "','ratio':'" + ratio + "','familia':'" + familia + "','imagen':'" + imagen + "','nota':'" + notas + "','especial':'" + especial + "','generos':'" + generos_trim_card + "','item':'" + item + "','comentarios':'" + comentarios + "','estado':'" + estado + "'}",
+                dataType: 'json',
+                type: 'post',
+                success: function (result) {
+                    $("#modal_editar_trim_card").modal("hide");                    
+                    buscar_trim_card();
+                    alertify.success('Succes!');
+                    alertify.set('notifier', 'position', 'top-right');
+                    //cargar tabla de trim cards al inicio
+                    $("#load_trim").css('display', 'none');
+                    //IMPRIMIR TRIM CARD
+                }
+            });
+        } else {
+            alertify.alert('Error!', 'Check empty fields, please');
+        }
+
+    }
+    /******E*D*I*T*A*R**T*R*I*M**C*A*R*D*********************************************************************************************************************************************************/
+</script>
+<style>
+    /****************************************************************************************************************************************/
+    textarea {
+        border: 1px solid #ccc;
+        border-radius: 7px;
+    }
+    #imagenes_edicion {
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 0.5em 0.5em 0.5em 1.5em;
+    }
+    .center {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    /****************************************************************************************************************************************/
+    input[type=checkbox] {
+        /* Double-sized Checkboxes */
+        -ms-transform: scale(2); /* IE */
+        -moz-transform: scale(2); /* FF */
+        -webkit-transform: scale(2); /* Safari and Chrome */
+        -o-transform: scale(2); /* Opera */
+        padding: 10px;
+    }
+
+    /* Might want to wrap a span around your checkbox text */
+    .checkboxtext {
+        /* Checkbox text */
+        font-size: 110%;
+        display: inline;
+    }
+
+    input[type='radio']:after {
+        width: 15px;
+        height: 15px;
+        border-radius: 15px;
+        top: -2px;
+        left: -1px;
+        position: relative;
+        background-color: #a7afb5;
+        content: '';
+        display: inline-block;
+        visibility: visible;
+        border: 0px solid white;
+    }
+
+    input[type='radio']:checked:after {
+        width: 15px;
+        height: 15px;
+        border-radius: 15px;
+        top: -2px;
+        left: -1px;
+        position: relative;
+        background-color: #ecaf2d;
+        content: '';
+        display: inline-block;
+        visibility: visible;
+        border: 0px solid white;
+    }
+
+    .cabecera_tabla2 {
+        /*background:#3479bf; #46a772*/
+        background: white;
+        color: #3479bf;
+        pointer-events: none;
+        cursor: not-allowed;
+    }
+
+    .cabecera_tabla {
+        /*background:#3479bf; #46a772*/
+        background: #3479bf;
+        color: white;
+        pointer-events: none;
+        cursor: not-allowed;
+    }
+
+    .select2-container--default .select2-selection--single {
+        display: block !important;
+        /*width: 100% !important;*/
+        height: 34px !important;
+        padding: 6px 12px !important;
+        font-size: 14px !important;
+        line-height: 1.42857143 !important;
+        color: #555 !important;
+        background-color: #fff !important;
+        background-image: none !important;
+        border: 1px solid #ccc !important;
+        border-radius: 4px !important;
+        -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075) !important;
+        box-shadow: inset 0 1px 1px rgba(0,0,0,.075) !important;
+        -webkit-transition: border-color ease-in-out .15s,-webkit-box-shadow ease-in-out .15s !important;
+        -o-transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s !important;
+        transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s !important;
+    }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #444;
+            line-height: 20px;
+        }
+
+    .modal-dialog {
+        width: 75% !important;
+        padding: 2em;
+        height: 90% !important;
+        min-height: 90% !important;
+    }
+
+    .modal-content {
+        height: 90% !important;
+    }
+
+    .modal-lg {
+        max-width: 80% !important;
+    }
+
+    a {
+        text-decoration: none !important;
+    }
+
+    .boton_barra_menu, .btn-info {
+        color: #fff;
+        background-color: #3479bf !important;
+        border-color: #3479bf !important;
+    }
+
+    .modal {
+        /*z-index: 4 !important;*/
+    }
+
+    .dataTables_filter {
+    }
+
+    .dropbtn {
+        background-color: #3479bf;
+        color: white;
+        padding: 16px;
+        /*padding: 0.40em;*/
+        font-size: 18px;
+        border: none;
+    }
+
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: white;
+        color: black;
+        min-width: 160px;
+        box-shadow: 1px 5px 25px 1px rgba(0,0,0,0.2);
+        z-index: 1;
+    }
+
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+    .menu {
+        background: #3479bf;
+        border-radius: 5px;
+        border: solid 1px #3479bf;
+        margin-bottom: .5em;
+        margin: 1em;
+    }
+
+    .dropdown-content a:hover {
+        /*background-color: #f1f1f1;
+        color: black;*/
+        background-color: #61b363;
+        color: white;
+    }
+
+    .dropdown:hover .dropdown-content {
+        display: block;
+    }
+
+
+    .modal-header-primary {
+        color: #fff;
+        padding: 9px 15px;
+        border-bottom: 1px solid #eee;
+        background-color: #3479bf;
+        -webkit-border-top-left-radius: 5px;
+        -webkit-border-top-right-radius: 5px;
+        -moz-border-radius-topleft: 5px;
+        -moz-border-radius-topright: 5px;
+        border-top-left-radius: 5px;
+        border-top-right-radius: 5px;
+    }
+
+    .x {
+        transition: transform .25s ease-in-out;
+        color: white !important;
+    }
+
+        .x:hover {
+            transform: rotate(180deg);
+            color: white !important;
+        }
+
+        .x:before {
+            transform: rotate(45deg);
+            transform-origin: center;
+        }
+
+        .x:after {
+            transform: rotate(-45deg);
+            transform-origin: center;
+        }
+
+    tr {
+        cursor: pointer;
+    }
+</style>
+<div id="load_trim_card" class="load">
+    <div id="spinner" class="imagen_loading" style=""></div>
+</div>
+<a id="link_tc" href="@Url.Action("imprimir_tc", "Trims")" style="visibility:hidden;">Daily</a>
+<input type="hidden" id="id_trim_edicion">
+<input type="hidden" id="id_trim_card_edicion">
+<div class="container-fluid" style="padding-left:7em; padding-right:3em;">
+    <center><h2 style="color:#3479bf; font-weight:bold;">T R I M&nbsp;&nbsp;C A R D </h2></center>
+    <div class="row">
+        <div class="menu">
+            <div class="dropdown">
+                <button class="dropbtn">Images</button>
+                <div class="dropdown-content">
+                    <a href="#modal_new_image" data-toggle="modal" class="btn_new_image">New</a>
+                   <a href="#modal_edit_image" data-toggle="modal" class="btn_edit_image">Edit</a>
+                </div>
+            </div>            
+            <div class="dropdown">
+                <button class="dropbtn">Trim card</button>
+                <div class="dropdown-content">
+                    <a href="#modal_nuevo_trim_card" data-toggle="modal" class="btn_new_trim_card">New</a>                   
+                </div>
+            </div>
+        </div>
+    </div>  
+    <div class="row" style="width:100%; margin-left: 0.15em; height:40em;  overflow:auto;    border-radius: 8px;">
+        <div class="panel" style="  border: 1px solid #3479bf;  ">
+            <div class="panel-heading" style="height:4em; ">
+                <label style="float:left;" class=" col-form-label">Search</label>
+                <input style="float:right;" type="text"   class="form-control validacion " maxlength="30" onkeyup="busqueda_trim_card_enter(event)" id="caja_busqueda_tc">
+            </div>
+         
+            <table id="tabla_trim_cards_inicio" class="table table-striped " style=" ">
+                <thead class="cabecera_tabla_trim_cards_iniciocabecera_tabla" style="background:#3479bf; color:white;">
+                    <tr>
+                        <th>#</th>
+                        <th>Order</th>
+                        <th>Customer</th>
+                        <th>User</th>
+                        <th>Date</th>
+                        <th>From</th>
+                        <th>To</th>
+                        <th>Delivery date</th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody class="body_tabla_trim_cards_inicio"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal_nueva_entrega" data-target="#modal_nueva_entrega">
+    <div class="modal-dialog" style="width:40% !important; padding:0px;">
+        <div class="modal-content" style="overflow:auto; width:100% !important; height:100% !important;">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" class="close x cerrar_material_request" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong></strong>Add delivery</h4>
+            </div>
+            <div class="modal-body " style="overflow:auto; padding: 3em;">
+                
+                <div class="row" id="" style="">
+                    <div id="" class="form-group" style="">
+                        <div class="form-group col-md-11 ">
+                            <label for="">Deliver </label>
+                            <input class="form-control " style="width:100%; " maxlength="200" id="caja_entrega_tc">
+                        </div>
+                        <div class="form-group col-md-11 ">
+                            <label for="">Receive </label>
+                            <input class="form-control " style="width:100%; " maxlength="200" id="caja_recibe_tc">
+                        </div>
+                        <div class="form-group col-md-11 ">
+                            <label for="">Date </label>
+                            <input class="form-control " style="width:100%; " maxlength="200" id="caja_fecha_tc">
+                        </div>
+                        <div class="form-group col-md-11 ">
+                            <label for=""> </label>
+                            <button type="button" class="btn btn-success mb-2" id="boton_edit_img" onclick="guardar_entrega_tc(event)" style=" margin-top:0.3em; float:right; margin-right:2em;">Save</button>
+                        </div>
+                    </div>
+                </div>
+                
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<div class="modal fade" id="modal_editar_trim_card" data-target="#modal_editar_trim_card">
+    <div class="modal-dialog" style="width:90% !important; padding:0px;">
+        <div class="modal-content" style="overflow:auto; width:100% !important; height:100% !important;">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" class="close x cerrar_material_request" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong></strong>Edit trim card</h4>
+            </div>
+            <div class="modal-body " style="overflow:auto;">
+                <div class="row">
+                    <div class="form-group">
+                        <div class="form-group col-md-3 ">
+                            <div class="form-group">
+                                <div class="form-group col-md-11 ">
+                                    <label for="caja_pedido_editar_tc">Order </label>
+                                    <select class="form-control js-example-basic-single pedidos_editar_tc" style="width:100%; " id="caja_pedido_editar_tc"></select>
+                                </div>
+                                <div class="form-group col-md-11 ">
+                                    <label for="caja_cliente_tc_editar">Customer </label>
+                                    <select class="form-control js-example-basic-single clientes_editar_tc" style="width:100%; " id="caja_cliente_tc_editar"></select>
+                                </div>
+                                <div class="form-group col-md-11 ">
+                                    <label for="">State </label>
+                                    <select class="form-control " style="width:100%; " id="caja_estado_tc_editar">
+                                        <option value="0">Incomplete</option>
+                                        <option value="1">Complete</option>
+                                    </select>
+                                </div>
+                                <div class="form-group col-md-11 ">
+                                    <label for="">Comments </label>
+                                    <input class="form-control " style="width:100%; " maxlength="200" id="caja_comentarios_tc_editar">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group col-md-4 " id="div_tabla_empaque_tc_editar" style="visibility:hidden;">
+                            <table id="tabla_empaque_ratios_tc_editar" class="fold-table table table-striped table-hover ">
+                                <thead class="cabecera_tabla_empaque_ratios_tc_editar" style="background:#3479bf; color:white;">
+                                    <tr><th></th><th>Type</th><th>Ratio</th></tr>
+                                </thead>
+                                <tbody class="rows_tabla_empaque_ratios_tc_editar"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div id="div_tabla_familias_tc_editar" class="row" style="padding: 2em; visibility:hidden;">
+                    <table id="tabla_familias_tc_editar" class="fold-table table table-striped table-hover ">
+                        <thead class="cabecera_tabla_familias_tc_editar" style="background:#3479bf; color:white;">
+                            <tr><th></th><th>Family</th><th>Item</th><th>Image</th><th>Notes</th><th>Special</th><th></th><th></th></tr>
+                        </thead>
+                        <tbody class="rows_tabla_familias_tc_editar"></tbody>
+                    </table>
+                </div>
+                <button type="button" class="btn btn-success mb-2" id="boton_edit_img" onclick="guardar_edicion_tc(event)" style=" margin-top:0.3em; float:right; margin-right:2em;">Save</button>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal_nuevo_trim_card" data-target="#modal_nuevo_trim_card">
+    <div class="modal-dialog" style="width:90% !important; padding:0px;">
+        <div class="modal-content" style="overflow:auto; width:100% !important; height:100% !important;">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" class="close x cerrar_material_request" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong></strong>New trim card</h4>
+            </div>
+            <div class="modal-body " style="overflow:auto;">
+                <div class="row">
+                    <div class="form-group">
+                        <div class="form-group col-md-3 ">
+                            <div class="form-group">
+                                <div class="form-group col-md-11 ">
+                                    <label for="caja_pedido_crear_tc">Order </label>
+                                    <select class="form-control js-example-basic-single pedidos_crear_tc" style="width:100%; " id="caja_pedido_crear_tc"></select>
+                                </div>
+                                <div class="form-group col-md-11 ">
+                                    <label for="caja_cliente_tc">Customer </label>
+                                    <select class="form-control js-example-basic-single clientes_crear_tc" style="width:100%; " id="caja_cliente_tc"></select>
+                                </div>
+                                <div class="form-group col-md-11 ">
+                                    <label for="">State </label>
+                                    <select class="form-control " style="width:100%; " id="caja_estado_tc">
+                                        <option value="0">Incomplete</option>
+                                        <option value="1">Complete</option>
+                                    </select>
+                                </div>
+                                <div class="form-group col-md-11 ">
+                                    <label for="">Comments </label>
+                                    <input class="form-control " style="width:100%; " maxlength="200"  id="caja_comentarios_tc">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group col-md-4 " id="div_tabla_empaque_tc" style="visibility:hidden;">
+                            <table id="tabla_empaque_ratios_tc" class="fold-table table table-striped table-hover ">
+                                <thead class="cabecera_tabla_empaque_ratios_tc" style="background:#3479bf; color:white;">
+                                    <tr><th></th><th>Type</th><th>Ratio</th></tr>
+                                </thead>
+                                <tbody class="rows_tabla_empaque_ratios_tc"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div id="div_tabla_familias_tc" class="row" style="padding: 2em; visibility:hidden;">
+                    <table id="tabla_familias_tc" class="fold-table table table-striped table-hover ">
+                        <thead class="cabecera_tabla_familias_tc" style="background:#3479bf; color:white;">
+                            <tr><th></th><th>Family</th><th>Item</th><th>Image</th><th>Notes</th><th>Special</th><th></th><th></th></tr>
+                        </thead>
+                        <tbody class="rows_tabla_familias_tc"></tbody>
+                    </table>
+                </div>
+                <button type="button" class="btn btn-success mb-2" id="boton_edit_img" onclick="guardar_tc(event)" style=" margin-top:0.3em; float:right; margin-right:2em;">Save</button>
+
+            </div>
+         </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal_edit_image" data-target="#modal_edit_image">
+    <div class="modal-dialog" style="width:90% !important; padding:0px;">
+        <div class="modal-content" style="overflow:auto; width:100% !important; height:100% !important;">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" class="close x cerrar_material_request" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong></strong>Edit image</h4>
+            </div>
+            <div class="modal-body " style="overflow:auto;">
+
+                <div class="row" id="" style="">
+                    <div class="form-group">
+                        <div id="" class="form-group col-md-4" style="">
+                            <h3>Change image </h3>
+                            <div class=" ">
+                                <label for="caja_pedido_subir_archivos">Select a family </label>
+                                <select class="form-control js-example-basic-single fam_edit_img" style="width:100%;  " id="caja_familia_edit"></select>
+                            </div>
+                            <div class="" style="margin-top:3em;">
+                                <label for="caja_pedido_subir_archivos">Select image to edit </label>
+                                <div id="imagenes_edicion" class="" style="overflow:auto;height:40em;">
+                                        
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="" class="form-group col-md-8" style="">
+                            <div class="row" id="div_edicion" style="visibility:hidden; padding: 2em;">
+                                <h4 style="border-bottom: solid 1px #3c763d;color: #3c763d; font-weight: bold; margin-top: 1em;">Change information</h4>
+                                <div class="form-group col-md-4 ">
+                                    <label>Change image</label>
+                                    <input type="file" class="custom-file-input" id="caja_image_editar" style=" float:left; margin-right:1em; padding-top:2em;" />
+                                </div>
+
+                                <table id="tabla_editar_imagenes" class="table table-striped ">
+                                    <thead><tr><th>Customer</th><th>Genre</th><th><button type="button" style=" " class="btn btn btn-danger" onclick="new_row_editar_img()" data-toggle="modal">+</button></th></tr></thead>
+                                    <tbody class="body_tabla_editar_imagenes"></tbody>
+                                </table>
+                                <button type="button" class="btn btn-success mb-2" id="boton_edit_img" onclick="guardar_editar_img(event)" style=" margin-top:0.3em; float:right; margin-right:2em;">Save</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal_new_image" data-target="#modal_new_image">
+    <div class="modal-dialog" style="width:90% !important; padding:0px;">
+        <div class="modal-content" style="overflow:auto; width:100% !important; height:100% !important;">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" class="close x cerrar_material_request" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong></strong>Add trim image</h4>
+            </div>
+            <div class="modal-body " style="overflow:auto; padding: 3em;">
+                <div class="row" id="" style="">
+                    <div id="div_formulario_archivo" class="form-group" style="">
+                        <h3>Upload image </h3>
+                        <div class="form-group col-md-4 ">
+                            <input type="file" class="custom-file-input" id="caja_image_new" style=" float:left; margin-right:1em; padding-top:2em;" />
+                        </div>
+                        <div class="form-group col-md-2 ">
+                            <label for="caja_pedido_subir_archivos">Family </label>
+                            <select class="form-control js-example-basic-single fam_new_img" style="width:100%;  " id="caja_familia_new"></select>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="row" id="" style="">
+                    <h4 style="border-bottom: solid 1px #3c763d;color: #3c763d; font-weight: bold; margin-top: 1em;"></h4>
+                    <table id="tabla_agregar_imagenes" class="table table-striped ">
+                        <thead><tr><th>Customer</th><th>Genre</th><th><button type="button" style=" " class="btn btn btn-danger" onclick="new_row_new_img()" data-toggle="modal">+</button></th></tr></thead>
+                        <tbody class="body_tabla_agregar_imagenes"></tbody>
+                    </table>
+                    <button type="button" class="btn btn-success mb-2" id="boton_guardar_new_img" onclick="guardar_img(event)" style=" margin-top:0.3em; float:right; margin-right:2em;">Save</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="enlargeImageModal" tabindex="-1" role="dialog" aria-labelledby="enlargeImageModal" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" class="close x " data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong></strong>Edit image</h4>
+            </div>
+            <div class="modal-body">
+                <img class="enlargeImageModalSource center" style="max-height:40em; max-width:70em; width:auto; height:auto;">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="" data-target="#">
+    <div class="modal-dialog" style="width:90% !important; padding:0px;">
+        <div class="modal-content" style="overflow:auto; width:100% !important; height:100% !important;">
+            <div class="modal-header orange  modal-header-primary">
+                <button type="button" class="close x cerrar_material_request" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><strong></strong>Edit image</h4>
+            </div>
+            <div class="modal-body " style="overflow:auto;">
+
+
+
+            </div>
+        </div>
+    </div>
+</div>

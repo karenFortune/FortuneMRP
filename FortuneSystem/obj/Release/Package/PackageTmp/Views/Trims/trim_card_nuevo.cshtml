@@ -1,0 +1,251 @@
+﻿@model IEnumerable<FortuneSystem.Models.Trims.Pedidos_trim_card>
+@{ Layout = null; }
+<!DOCTYPE html>
+<html>
+<head>
+
+    <link href="@Server.MapPath("~/Content/bootstrap-theme.css")" rel="stylesheet" />
+    <link href="@Server.MapPath("~/Content/bootstrap.min.css")" rel="stylesheet" />
+    <link href="@Server.MapPath("~/Content/base_m.css")" rel="stylesheet" />
+
+    <style>
+        body {
+            font-family: sans-serif;
+            font-size:12px;
+        }        
+        .rotate90 {
+            -webkit-transform: rotate(90deg);
+            -moz-transform: rotate(90deg);
+            -o-transform: rotate(90deg);
+            -ms-transform: rotate(90deg);
+            transform: rotate(90deg);
+        }
+        p {
+        margin:0px;
+        padding:0px;
+        }
+        .page-breaker {
+            display: block;
+            clear: both;
+            page-break-after: always;
+        }
+        
+    </style>
+</head>
+@{
+    int total_estilos = 0, total_generos = 0, contador = 0, contador_divs = 1, col_1 = 1,total_trims=0,cont_a=0, cont_b=0,saltos=0;
+    string item_descripcion, estilos_css;
+}
+<body>
+    @foreach (var item in Model)
+    {
+        foreach (var e in item.lista_estilos)
+        {
+            total_estilos++;
+        }
+
+        <div id="principal_pagina_1" style="width:120em; height:90em;  border-left:1px solid black; ">
+            <div id="columna_1" style="width:40em; height:90em;  float:left; border-right:1px solid black; border-bottom:1px solid black; border-top:1px solid black;">
+                <div id="r1_c1" style="width:100%;  padding-left:.5em; height:5em; margin-top:1em; ">
+                    <div style="font-size:2em; float:left; text-align:center; margin-right:1em; ">FFB<br /><label style="font-size:0.5em;">FORTUNE FASHIONS BAJA</label></div>
+                    <div style="font-size:2em; float:left; text-align:center; margin-right:1em; ">TRIM CARD</div>
+                    <div style=""><img src="@Server.MapPath("~/Content/img/logo_small.png")" style="width:130px; height:77px; " /></div>
+                </div><!--ROW 1-->
+                <div id="r2_c1" style="width:100%; padding-left:.5em;  text-align:left; height:27em; border-bottom:1px solid black; ">
+                    <br /><b>PO# </b><label style="text-decoration:underline; font-weight:normal;">@item.pedido </label> <br />
+                    <b>CUSTOMER:&nbsp; </b><label style="text-decoration:underline;  font-weight:normal;">@item.customer </label> <br />
+                    <b>STYLES:&nbsp;</b> <span style="text-decoration:underline;  font-weight:normal; letter-spacing: 0px; word-spacing:0px;">
+                        
+                        @foreach (var e in item.lista_estilos)
+                        {
+                            @e.descripcion <label>&nbsp;&nbsp;</label>                            
+                        }
+                    </span>
+                    <br />
+                    <b>MADE BY:&nbsp;</b> @item.usuario <br />
+                    <b>GENDER:&nbsp;</b>
+                    
+                    @foreach (var e in item.lista_generos)
+                    {
+                        @e.genero <label>&nbsp;&nbsp;</label>                        
+                    }
+                    <br />
+                </div><!--ROW 2-->
+                <div id="r1_c4" style="width:100%;  padding-left:.5em; text-align:left; height:10em; border-bottom:1px solid black;  ">
+                    @if (item.tipo_empaque == 1)
+                    {
+                        <p><b>BULK</b>&nbsp; </p>
+                    }
+                    else
+                    {
+                        if (item.tipo_empaque == 2)
+                        {
+                            <p><b>PPK</b>&nbsp; </p>
+                        }
+                        else
+                        {
+                            <p><b>ASSORT</b>&nbsp; </p>
+                        }
+                    }
+                    <b>RATIO:</b>&nbsp;@item.ratio<br />
+                    <b>FOLD SIZE:</b>&nbsp; @item.fold_size
+                </div><!--ROW 4-->
+                <div id="r1_c6" style="width:100%;  padding-left:.5em; text-align:left; height:10em; border-bottom:1px solid black;  ">
+                    <b>BOX:&nbsp;</b>
+                    @foreach (var f in item.lista_familias)
+                    {
+                        if (f.family_trim == "BOXES")
+                        {
+                            <span style="text-decoration:underline;"> @f.item</span>
+                            <p style="text-decoration:underline;">@f.especial</p>
+                            <p style="text-decoration:underline;">@f.notas</p>
+                        }
+                    }
+
+                </div><!--ROW 6-->
+                <div id="r1_c8" style="width:100%;  padding-left:.5em; text-align:left; height:4em; border-bottom:1px solid black;  ">
+                    <b>DATE:&nbsp;</b>@item.fecha
+                </div><!--ROW 8-->
+                <div id="r1_c9" style="width:100%;  padding-left:.5em; text-align:left; height:4em; border-bottom:1px solid black;">
+                    <b>CHECKED BY TRIMS&nbsp;</b>
+                </div><!--ROW 9-->
+                <div id="r1_c10" style="width:100%;  padding-left:.5em; text-align:left; height:4em; border-bottom:1px solid black;  ">
+                    <b>CHECKED BY QC&nbsp;</b>
+                </div><!--ROW 10-->
+                <div id="r1_c11" style="width:100%;  padding-left:.5em; text-align:left; height:4em; border-bottom:1px solid black;  ">
+                    <b>CHECKED BY PACKING&nbsp;</b>
+                </div><!--ROW 11-->
+
+                @foreach (var f in item.lista_familias)
+                {
+                    if (f.family_trim =="BULLETS")
+                    {
+                        if (col_1 == 3) { estilos_css = "width:100%;  padding-left:.5em; text-align:left; height:5em; border-bottom: 0px solid black;"; }
+                        else { estilos_css = "width:100%;  padding-left:.5em; text-align:left; height:5em; border-bottom: 1px solid black;"; }
+                        <div id="r1_c3" style=" @estilos_css ">
+                            <b>@f.item ''</b><br />
+                            <img src="@f.imagen" alt=" " style="max-width:15em; height:auto; max-height:4em; " />
+                        </div><!--ROW 3-->
+                    }
+                    if (f.family_trim == "POLYBAG")
+                    {
+                        if (col_1 == 3) { estilos_css = "width:100%;  padding-left:.5em; text-align:left; height:7em; border-bottom:0px solid black;"; }
+                        else { estilos_css = "width:100%;  padding-left:.5em; text-align:left; height:7em; border-bottom:1px solid black;"; }
+                        <div id="r1_c5" style=" @estilos_css ">
+                            <b>POLYBAG:</b><br />
+                            <p style="text-decoration:underline;"> @f.item</p>
+                            <p style="text-decoration:underline;">@f.especial</p>
+                        </div><!--ROW 5-->
+                    }
+                    if (f.family_trim == "HANGERS")
+                    {
+                        if (col_1 == 3) { estilos_css = "width:100%;  padding-left:.5em;  text-align:left; height:9em; border-bottom:0px solid black;"; }
+                        else { estilos_css = "width:100%;  padding-left:.5em; text-align:left; height:9em; border-bottom:1px solid black;"; }
+                        <div id="r1_c7" style="@estilos_css  ">
+                            <b>HANGERS:&nbsp;</b>
+                            <span style="text-decoration:underline;"> @f.item</span>
+                            <p style="text-decoration:underline;">@f.especial</p>
+                            <p style="text-decoration:underline;">@f.notas</p>
+                        </div><!--ROW 7-->
+                    }
+                    col_1++;
+                }
+            </div><!--C1-->
+            <div id="columna_2" style="width:78em; height:90em;  float:left;">
+                @foreach (var f in item.lista_familias)
+                {
+                    if (f.id_family_trim != 3 && f.id_family_trim != 12 && f.id_family_trim != 9  && f.family_trim != "BOXES" && contador_divs <= 9)//&& f.id_family_trim != 2 
+                    {
+                        
+                        if (contador_divs <= 3){
+                            estilos_css = "width:26em; height:30em; border-bottom:1px solid black; border-right:1px solid black; border-top:1px solid black; float:left;";
+                        }else {
+                            estilos_css = "width:26em; height:30em; border-bottom:1px solid black; border-right:1px solid black; float:left;";
+                        }
+                <div style="@estilos_css">
+                    <center><p style=""><b>&nbsp; @f.family_trim&nbsp;</b></p></center>
+                    <center><img src="@f.imagen" alt="&nbsp;" style="max-width:20em; height:auto; max-height:20em; " /></center>
+                    <p>&nbsp;Notas:&nbsp; @f.notas</p>
+                    @if (f.id_family_trim == 27){//price ticket
+                        <p>Apply PT: @f.especial</p>
+                    }else{
+                        <p>@f.especial</p>
+                    }
+                    
+                </div>
+                        contador_divs++;
+                    }
+                }
+            </div>
+        </div>
+        <div style="text-align:center; vertical-align:middle; width:123em; height:3em;"><br /><b>DOCUMENTO CONTROLADO - ÚNICAMENTE SE PUEDE MODIFICAR POR EL SUPERVISOR DE TRIMS</b></div>
+        foreach (var f in item.lista_familias)
+        {
+            if (f.id_family_trim != 3 && f.id_family_trim != 12  && f.id_family_trim != 9 && f.family_trim != "BOXES")//
+            {
+                total_trims++;
+            }
+        }
+        if (total_trims > 9)
+        {
+            saltos++;
+            <div class="page-breaker"></div>
+           
+            <center>
+                @foreach (var f in item.lista_familias)
+                {           //bullet                    polybag                                 hangers
+                if (f.id_family_trim != 3 && f.id_family_trim != 12  && f.id_family_trim != 9 && f.family_trim != "BOXES")//gbfjdgb jlrbfgjrnbrtjk //&& f.id_family_trim != 2
+                {
+                cont_a++;
+                if (cont_b == 12)
+                {
+                cont_b = 0;<br />
+
+                <div class="page-breaker"></div>
+                }
+                if (cont_a > 9)
+                {
+                cont_b++;
+                estilos_css = "width:25%; height:30em; border-bottom:1px solid black; border-right:1px solid black; float:left;";
+                if (cont_b ==1){
+                estilos_css = "width:25%; height:30em; border:1px solid black; float:left;";
+                }
+
+                if (cont_b >1 && cont_b <= 4){
+                estilos_css = "width:25%; height:30em; border-bottom:1px solid black; border-top:1px solid black; border-right:1px solid black; float:left;";
+                }
+
+                if ( cont_b == 5|| cont_b == 9){
+                estilos_css = "width:25%; height:30em; border-bottom:1px solid black; border-left:1px solid black; border-right:1px solid black; float:left;";
+                }
+                <div style="@estilos_css">
+                    <center><p><b>&nbsp; @f.family_trim&nbsp;</b></p></center>
+                    <center><img src="@f.imagen" alt="&nbsp;" style="max-width:25em; height:auto; max-height:20em; " /></center>
+                    <p style="text-align:left;">&nbsp;Notas:&nbsp; @f.notas</p>
+                    <p style="text-align:left;">@f.especial</p>
+                </div>
+
+                }
+
+                }
+                }
+
+            </center>
+            
+            
+
+            if (((total_trims - 9) % 12) != 0)
+            {
+                
+
+            }
+
+        }
+
+
+
+    }
+
+
+</body>
+</html>

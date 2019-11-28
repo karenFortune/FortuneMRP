@@ -1,0 +1,20 @@
+﻿/* Fullscreen */
+html:-moz-full-screen {
+    background: white;
+}
+
+html:-webkit-full-screen {
+    background: white;
+}
+
+html:-ms-fullscreen {
+    background: white;
+}
+
+body:-ms-fullscreen {
+    overflow: auto; /* fix for IE11 scrollbar */
+}
+
+html:fullscreen {
+    background: white;
+}

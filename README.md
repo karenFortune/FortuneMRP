@@ -1,2 +1,1 @@
-# FortuneMRP
-Sistema control de producción
+# Fortune
